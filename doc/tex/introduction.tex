@@ -1,0 +1,12 @@
+\section{Wstęp}
+
+Celem projektu jest opracowanie i~zaimplementowanie zestawu wybranych metod przetwarzania sygnałów audio znanych z~popularnych multiefektów gitarowych. Zadaniem tego typu rozwiązań jest modyfikowanie próbkowanego dźwięku w~czasie rzeczywistym w taki sposób, aby urozmaicić jego brzmienie np. poprzez modulację, przesunięcie fazowe lub wprowadzenie dodatkowych składowych. Przykładami takich efektów są m.in.
+
+\begin{itemize}
+    \item \textbf{echo} (opóźnienie, ang. \textit{delay}) - do sygnału dodawana jest jedna lub kilka jego kopii opóźnionych o~określoną liczbę próbek; efekt ma symulować warunki panujące w~halach widowiskowych
+    \item \textbf{chorus} - działa na podobnej zasadzie co echo, jednak występujące tu opóźnienia są z~reguły znacznie krótsze a~dodatkowe składowe podlegają niewielkiej modulacji; daje to charakterystyczny efekt brzmienia chóralnego
+    \item \textbf{flanger} - kolejny efekt wykorzystujący opóźnione próbki sygnału; w~tym przypadku wielkość opóźnienia podlega cyklicznym zmianom, co przekłada się na pulsacyjny charakter wyjściowego dźwięku
+    \item \textbf{overdrive} - nazwa ogółu metod prowadzących do znacznego zniekształcenia sygnału bazowego; jednym z~popularnych sposobów jego implementacji jest nałożenie obustronnych ograniczeń na wyjściowe wartości przepuszczanego sygnału
+\end{itemize}
+
+Powyższe efekty stanowią jedynie niewielki wycinek stosowanych rozwiązań, wśród których wymienić można także szeroko pojęte metody equalizacji, czy modyfikowania częstotliwości sygnału. Minimalna wersja projektu zakłada implementację scharakteryzowanych metod przetwarzania wraz z~prostymi mechanizmami wprowadzania i~wyprowadzania danych z~urządzenia a~także dostosowywania parametrów filtrów. Jako metodę komunikacji wybrano popularny (choć może w~niec innych zastosowaniach) interfejs UART (ang. \textit{universal asynchronous receiver-transmitter}). Jego prostota umożliwi przyspieszenie procesu implementacji, a~co za tym idzie szybsze przejście do zasadniczej części projektu. Testowanie urządzenia obywać się będzie z~pomocą prostej aplikacji w~języku Python, która z~pomocą wirtualnego portu szeregowego wysyłać będzie do urządzenia próbki dźwięku oraz zapisywać odebrane dane do osobnego pliku. Cyfrowy charakter UARTa pozwoli w~przyszłości przejść na popularny interfejs $I^{2}S$, dzięki któremu możliwe będzie proste dołączenie do urządzenia układów przetwornikowych.
