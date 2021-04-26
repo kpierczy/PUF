@@ -1,0 +1,27 @@
+{
+    // LaTeX
+    "editor.wordWrap": "on",
+    "latex-workshop.latex.outDir": "out",
+
+    // Autoheader
+    "autoHeader": {
+        "format": {
+            "startWith": " -- ===================================================================================================================================",
+            "middleWith": "--",
+            "endWith": "-- ===================================================================================================================================",
+            "headerPrefix": "@",
+        },
+        "header": {
+            "Author": "Krzysztof Pierczyk",
+            "Create Time": {
+                "type": "createTime",
+                "format": "YYYY-MM-DD HH:mm:ss",
+            },
+            "Modified time": {
+                "type": "modifyTime",
+                "format": "YYYY-MM-DD HH:mm:ss"
+            },
+            "Description": "\n --    \n --    \n --    ",
+        }
+    },
+}

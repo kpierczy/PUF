@@ -1,2 +1,7 @@
 # Latex
 doc/out
+# Vivado
+**/*.log
+**/*.jou
+**/*.str
+**/*.Xil
