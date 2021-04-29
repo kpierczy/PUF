@@ -17,6 +17,20 @@ use ieee.math_real.all;
 
 package sim is
 
+    -- ===================================================================
+    -- General use utilities
+    -- ===================================================================
+
+    -- Clocking procedure
+    procedure clock_tb(period : time; signal clk : out std_logic);
+    
+    -- Resetting procedure
+    procedure reset_tb(reset_time : time; signal reset_n : out std_logic);
+
+    -- ===================================================================
+    -- Random generators
+    -- ===================================================================
+
     -- Random function's seed
     shared variable seed1, seed2 : Integer := 999;
 
@@ -40,6 +54,33 @@ end package sim;
 -- -------------------------------------------------------------- Body ---------------------------------------------------------------
 
 package body sim is
+
+    -- ===================================================================
+    -- General use utilities
+    -- ===================================================================
+
+    -- Clocking procedure
+    procedure clock_tb(period : time; signal clk : out std_logic) is
+    begin
+        loop
+            clk <= '1';
+            wait for period / 2;
+            clk <= '0';
+            wait for period / 2;
+        end loop;
+    end procedure;
+
+    -- Resetting procedure
+    procedure reset_tb(reset_time : time; signal reset_n : out std_logic) is
+    begin
+        reset_n <= '0';
+        wait for reset_time;
+        reset_n <= '1';
+    end procedure;
+
+    -- ===================================================================
+    -- Random generators
+    -- ===================================================================
 
     -- Sets internal seeds for RN Generator
     procedure set_uniform_seeds(one, two : Integer) is

@@ -128,7 +128,7 @@ package body serial_lib_TB is
     constant SLOWO		:in  std_logic_vector;	-- wysylane slowo danych
     signal   TX			:out std_logic		-- wysylany sygnal szeregowy
   ) is
-    constant T_BODU		:time := 1sec/L_BODOW;
+    constant T_BODU		:time := 1 sec/L_BODOW;
     variable BUFOR		:std_logic_vector(SLOWO'range);
     function tx_neg(TX : std_logic) return std_logic is
     begin
@@ -172,7 +172,7 @@ package body serial_lib_TB is
     variable SLOWO		:out std_logic_vector;	-- odbrane slowo danych
     variable BLAD		:out boolean		-- blad odbioru
   ) is
-    constant T_BODU		:time := 1sec/L_BODOW;
+    constant T_BODU		:time := 1 sec/L_BODOW;
     variable BUFOR		:std_logic_vector(SLOWO'range);
     variable PROBLEM		:boolean;
     function rx_neg(RX : std_logic) return std_logic is
@@ -229,7 +229,7 @@ package body serial_lib_TB is
     signal   RX			:in  std_logic;		-- odbierany sygnal szeregowy
     variable SYNCH		:out boolean		-- wykonano synchronizacje
   ) is
-    constant O_BITU		:time := 1sec/L_BODOW;
+    constant O_BITU		:time := 1 sec/L_BODOW;
     variable TX_SLOWO		:std_logic_vector(B_SLOWA-1 downto 0);
     variable RX_SLOWO		:std_logic_vector(B_SLOWA-1 downto 0);
     variable SLOWO_SYNCH	:std_logic_vector(B_SLOWA-1 downto 0);
@@ -240,7 +240,7 @@ package body serial_lib_TB is
     if (N_SERIAL=FALSE) then TX <= '1'; else TX <= '0'; end if;
     wait for O_BITU;
     if (N_SERIAL=FALSE) then TX <= '0'; else TX <= '1'; end if;
-    wait for 0ns;
+    wait for 0 ns;
     -- oebranie slowa synchronizujacego
     TB_serial_rx(L_BODOW, B_PARZYSTOSCI, B_STOPOW, N_SERIAL, N_SLOWO, RX, RX_SLOWO, BLAD);
     SLOWO_SYNCH := SLOWO_ZERO + X"9A";
@@ -286,7 +286,7 @@ package body serial_lib_TB is
     if (B_STOPOW<1 or B_STOPOW>2) then return; end if;
     TX <= '0';
     if (N_SERIAL=TRUE) then TX <= '1'; end if;
-    wait for 0ns;
+    wait for 0 ns;
     KONFIG.L_ADRESOW     := L_ADRESOW;
     KONFIG.L_DANYCH      := L_DANYCH;	
     KONFIG.L_BODOW       := L_BODOW;	

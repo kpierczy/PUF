@@ -32,7 +32,7 @@ entity UartTx is
         -- Data width
         DATA_WIDTH : Positive range 5 to 8;
         -- Parity usage
-        PARITY_USED : Boolean;
+        PARITY_USED : Std_logic;
         -- Parity type
         PARITY_TYPE : ParityType;
         -- Number of stopbits
@@ -48,10 +48,10 @@ entity UartTx is
         -- System clock
         clk : in Std_logic;
         -- Transfer initialization signal (active high)
-        enable : in Std_logic;
-        -- Ration of the @in clk frequency to the baud frequency (minus 1) (not buffered internally!)
+        transfer : in Std_logic;
+        -- Ration of the @in clk frequency to the baud frequency (minus 1)
         baud_period : in Natural range 0 to SYS_CLK_HZ / BAUD_RATE_MIN - 1;
-        -- Data to be transfered (latched on @in clk rising edge when @in enable high and @out busy's low)
+        -- Data to be transfered (latched on @in clk rising edge when @in transfer high and @out busy's low)
         data : in Std_logic_vector(DATA_WIDTH - 1 downto 0);
 
         -- 'Module busy' signal (active high)
@@ -66,6 +66,10 @@ end entity UartTx;
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
 architecture logic of UartTx is
+
+    -- Output serial signal before optional negation
+    signal txNonInv : Std_logic;
+
 begin
 
     -- Assert proper ratio of the system clock and baud rate
@@ -79,6 +83,9 @@ begin
     -- State machine of the transmitter
     -- =================================================================================
 
+    -- Negate serial signal (optional)
+    tx <= txNonInv xor SIGNAL_NEGATION;
+    
     process(reset_n, clk) is
 
         -- Stages of the transmitter
@@ -89,14 +96,14 @@ begin
         -- Period of the single baud (in @in clk's periods) minus 1
         variable baudPeriod : Natural range 0 to SYS_CLK_HZ / BAUD_RATE_MIN - 1;
         -- Data buffer (Stop does not need to be standalone signals. Shift register fills empty bits with suitable values)
-        variable dataBuf : Std_logic_vector(DATA_WIDTH - 1 downto 0);
+        variable dataBuf : Std_logic_vector(data'range);
         -- State of the parity bit of data
         variable parityBit : Std_logic;
 
         -- Baud counter
         variable baudCounter : Natural range 0 to SYS_CLK_HZ / BAUD_RATE_MIN - 1;
         -- Counter of data/stop bits transmitted
-        variable bitsCounter : Natural range 0 to DATA_WIDTH - 1;
+        variable bitsCounter : Natural range 0 to data'length - 1;
 
     begin
         -- Reset condition
@@ -104,12 +111,12 @@ begin
 
             -- Set outputs to default
             busy <= '0';
-            tx   <= SIGNAL_NEGATION;
+            txNonInv <= '0';
             -- Set internal buffers to default
             baudPeriod := 0;
             dataBuf    := (others => '0');
             parityBit  := '0';
-            -- Set internal signals to default
+            -- Set internal counters to default
             baudCounter := 0;
             bitsCounter :=  0;
             -- Default state: IDLE_ST
@@ -125,17 +132,21 @@ begin
                 when IDLE_ST =>
                      
                     -- Activation of the transmission
-                    if(enable = '1') then
+                    if(transfer = '1') then
                         -- Signal that the entity is busy
                         busy <= '1'; 
                         -- Push start bit to serial output
-                        tx <= not SIGNAL_NEGATION;
+                        txNonInv <= '1';
                         -- Fetch baud period
                         baudPeriod := baud_period;
                         -- Fetch data to be sent
                         dataBuf := data;
                         -- Compute parity bit from input data
-                        parityBit := parity_gen(data, PARITY_TYPE) xor SIGNAL_NEGATION;
+                        if(DATA_NEGATION = '1') then 
+                            parityBit := parity_gen(not(data), PARITY_TYPE);
+                        else
+                            parityBit := parity_gen(data, PARITY_TYPE);
+                        end if;
                         -- Go to the start bit transmission state
                         state := START_ST;
                     end if;
@@ -150,7 +161,10 @@ begin
                     -- Otherwise
                     else
                         -- Push first data bit to the serial output     
-                        tx <= (dataBuf(0) xor DATA_NEGATION) xor SIGNAL_NEGATION;
+                        txNonInv <= dataBuf(0) xor DATA_NEGATION;
+                        -- Shift dtaa in the buffer
+                        dataBuf(dataBuf'left - 1 downto 0) := dataBuf(dataBuf'left downto 1);
+                        dataBuf(dataBuf'left) := '0';
                         -- Reset baud counter   
                         baudCounter := 0;
                         -- Change state to 'data sending'   
@@ -169,8 +183,11 @@ begin
                             baudCounter := baudCounter + 1;
                         -- Otherwise
                         else
-                            -- Push next data bit to the serial output    
-                            tx <= (dataBuf(bitsCounter + 1) xor DATA_NEGATION) xor SIGNAL_NEGATION;
+                            -- Push first data bit to the serial output     
+                            txNonInv <= dataBuf(0) xor DATA_NEGATION;
+                            -- Shift dtaa in the buffer
+                            dataBuf(dataBuf'left - 1 downto 0) := dataBuf(dataBuf'left downto 1);
+                            dataBuf(dataBuf'left) := '0';
                             -- Increment counter of sent data bits
                             bitsCounter := bitsCounter + 1;
                             -- Reset baud counter
@@ -192,15 +209,15 @@ begin
                             bitsCounter := 0;
     
                             -- If parity bit has to be sent
-                            if(PARITY_USED) then
+                            if(PARITY_USED = '1') then
                                 -- Push parity bit to the serial output
-                                tx <= parityBit;
+                                txNonInv <= parityBit;
                                 -- Go to the 'parity transmission' state
                                 state := PARITY_ST;
                             -- Else, transmit stop bit
                             else
                                 -- Push stop bit to the serial output    
-                                tx <= SIGNAL_NEGATION;
+                                txNonInv <= '0';
                                 -- Go to the 'stop bit(s) transmission' state
                                 state := STOP_ST;
                             end if;
@@ -219,7 +236,7 @@ begin
                     -- Otherwise
                     else
                         -- Push stop bit to the serial output
-                        tx <= SIGNAL_NEGATION;
+                        txNonInv <= '0';
                         -- Reset baud counter
                         baudCounter := 0;
                         -- Change state to 'stop bit(s) sending'
@@ -239,7 +256,7 @@ begin
                         -- Otherwise
                         else
                             -- Push stop bit to the serial output
-                            tx <= SIGNAL_NEGATION;
+                            txNonInv <= '0';
                             -- Reset baud counter
                             baudCounter := 0;
                             -- Increment counter of sent data bits
@@ -262,7 +279,7 @@ begin
                             -- Signal that the entity is busy
                             busy <= '0'; 
                             -- Push idle state to the serial output
-                            tx <= SIGNAL_NEGATION;
+                            txNonInv <= '0';
                             -- Go to the 'stop bit(s) transmission' state
                             state := IDLE_ST;
                         end if;
