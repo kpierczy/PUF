@@ -31,11 +31,25 @@ architecture logic of shift_reg_tb is
     -- Min time between random toggles of the enable signal
     constant MIN_ENABLE_TOGGLE_TIME : Time := 10 ns;
     -- Max time between random toggles of the enable signal
-    constant MAX_ENABLE_TOGGLE_TIME : Time := 100_000 ns;
+    constant MAX_ENABLE_TOGGLE_TIME : Time := 1000 ns;
 
     -- Width of the cocunter
     constant REGISTER_WIDTH : Positive := 8;
      
+    -- MIN time between randomization of the register's load input
+    constant MIN_LOAD_PUSH_TOGGLE_TIME : Time := 10 ns;
+    -- Max time between randomization of the register's load input
+    constant MAX_LOAD_PUSH_TOGGLE_TIME : Time := 1000 ns;
+    -- MIN time between randomization of the register's shift input
+    constant MIN_SHIFT_TOGGLE_TIME : Time := 10 ns;
+    -- Max time between randomization of the register's shift input
+    constant MAX_SHIFT_TOGGLE_TIME : Time := 100 ns;
+    -- MIN time between randomization of the register's input input
+    constant MIN_IN_VALUE_RANDOMIZE_TIME : Time := 10 ns;
+    -- Max time between randomization of the register's input input
+    constant MAX_IN_VALUE_RANDOMIZE_TIME : Time := 10000 ns;
+
+
     -- Reset (asynchronous)
     signal reset_n	: Std_logic;
     -- Clock    
@@ -44,14 +58,11 @@ architecture logic of shift_reg_tb is
     ------------------------------------------------------------------------------------
     -- ============== Parallel-to-Serial specifc signals and constants ============== --
     ------------------------------------------------------------------------------------
-    
-    -- MIN time between randomization of the register's load input (parallel-to-serial)
-    constant MIN_LOAD_VALUE_RANDOMIZE_TIME : Time := 10 ns;
-    -- Max time between randomization of the register's load input (parallel-to-serial)
-    constant MAX_LOAD_VALUE_RANDOMIZE_TIME : Time := 100_000 ns;
 
-    -- Enabling signal (active high) (parallel-to-serial)
-    signal enable_pts : Std_logic := '0';
+    -- Loads register on the rising edge (parallel-to-serial)
+    signal load_pts : Std_logic := '0';
+    -- Shifts register on the rising edge (parallel-to-serial)
+    signal shift_pts : Std_logic := '0';
     -- Load value (active high) (parallel-to-serial)
     signal in_parallel_pts : Std_logic_vector(REGISTER_WIDTH - 1 downto 0) := (others => '0');
     -- Output bit (parallel-to-serial)
@@ -60,14 +71,11 @@ architecture logic of shift_reg_tb is
     ------------------------------------------------------------------------------------
     -- ============== Serial-to-Parallel specifc signals and constants ============== --
     ------------------------------------------------------------------------------------
-    
-    -- MIN time between randomization of the register's input state (serial-to-parallel)
-    constant MIN_IN_VALUE_RANDOMIZE_TIME : Time := 10 ns;
-    -- Max time between randomization of the register's input state (serial-to-parallel)
-    constant MAX_IN_VALUE_RANDOMIZE_TIME : Time := 100 ns;    
 
-    -- Enabling signal (serial-to-parallel)
-    signal enable_stp : Std_logic := '0';
+    -- Pushes register's value to the output on the rising edge (serial-to-parallel)
+    signal push_stp : Std_logic := '0';
+    -- Shifts register on the rising edge (serial-to-parallel)
+    signal shift_stp : Std_logic := '0';
     -- Output bit (serial-to-parallel)
     signal in_bit_stp : Std_logic := '0';
     -- Load value (active high) ((serial-to-parallel)
@@ -97,13 +105,15 @@ begin
     port map (
         reset_n     => reset_n,
         clk         => clk,
-        enable      => enable_pts,
+        load        => load_pts,
+        shift        => shift_pts,
         in_parallel => in_parallel_pts,
         out_bit     => out_bit_pts
     );
 
     -- Random enable signal
-    enable_pts <= not enable_pts after rand_time(MIN_ENABLE_TOGGLE_TIME, MAX_ENABLE_TOGGLE_TIME);
+    load_pts <= not load_pts after rand_time(MIN_LOAD_PUSH_TOGGLE_TIME, MAX_LOAD_PUSH_TOGGLE_TIME);
+    shift_pts <= not shift_pts after rand_time(MIN_SHIFT_TOGGLE_TIME, MAX_SHIFT_TOGGLE_TIME);
 
     -- Load value's path
     process is
@@ -119,7 +129,7 @@ begin
         -- Random generation
         else
             in_parallel_pts <= rand_logic_vector(REGISTER_WIDTH);
-            wait for rand_time(MIN_LOAD_VALUE_RANDOMIZE_TIME, MAX_LOAD_VALUE_RANDOMIZE_TIME);
+            wait for rand_time(MIN_IN_VALUE_RANDOMIZE_TIME, MAX_IN_VALUE_RANDOMIZE_TIME);
         end if;
     end process;
 
@@ -135,13 +145,15 @@ begin
     port map (
         reset_n      => reset_n,
         clk          => clk,
-        enable       => enable_stp,
+        push         => push_stp,
+        shift        => shift_stp,
         in_bit       => in_bit_stp,
         out_parallel => out_parallel_stp
     );
 
     -- Random enable signal
-    enable_stp <= not enable_stp after rand_time(MIN_ENABLE_TOGGLE_TIME, MAX_ENABLE_TOGGLE_TIME);
+    push_stp <= not push_stp after rand_time(MIN_LOAD_PUSH_TOGGLE_TIME, MAX_LOAD_PUSH_TOGGLE_TIME);
+    shift_stp <= not shift_stp after rand_time(MIN_SHIFT_TOGGLE_TIME, MAX_SHIFT_TOGGLE_TIME);
 
     -- Input value's path
     process is

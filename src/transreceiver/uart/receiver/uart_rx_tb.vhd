@@ -12,7 +12,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 library work;
 use work.uart.all;
-use work.sim.all
+use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
@@ -21,10 +21,12 @@ end entity uart_rx_tb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of uart_rx_tb is
-     
-  
+architecture logic of uart_rx_tb is  
 begin
     
-
+    process is
+    begin
+        wait for 10ns;
+    end process;
+    
 end architecture logic;

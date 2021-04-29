@@ -20,6 +20,9 @@ package sim is
     -- Random function's seed
     shared variable seed1, seed2 : Integer := 999;
 
+    -- Sets internal seeds for RN Generator
+    procedure set_uniform_seeds(one, two : Integer);
+
     -- Generates random Real number in range
     impure function rand_real(min_val, max_val : Real) return Real;
     
@@ -37,6 +40,13 @@ end package sim;
 -- -------------------------------------------------------------- Body ---------------------------------------------------------------
 
 package body sim is
+
+    -- Sets internal seeds for RN Generator
+    procedure set_uniform_seeds(one, two : Integer) is
+    begin
+        seed1 := one;
+        seed2 := two;
+    end procedure;
 
     -- Generates random Real number in range
     impure function rand_real(min_val, max_val : Real) return Real is

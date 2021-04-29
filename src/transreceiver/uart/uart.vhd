@@ -10,13 +10,14 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_misc.all;
 
 -- ------------------------------------------------------------- Header --------------------------------------------------------------
 
 package uart is
 
     -- Type of the edge
-    type Parity is (EVEN, ODD);
+    type ParityType is (EVEN, ODD);
 
     -- Reception errors (usable to index Std_logic_vector)
     type UartErrors is record
@@ -29,7 +30,7 @@ package uart is
     type UartOvs is (X8, X16);
 
     -- Parity bit generator. Returns '1' if number of bits set in @p data is even (for EVEN) or odd (for ODD) and '0' otherwise
-    function parity_gen(data : Std_logic_vector; parity_type: Parity) return Std_logic;
+    function parity_gen(data : Std_logic_vector; parity_type: ParityType) return Std_logic;
 
 end package uart;
 
@@ -38,22 +39,15 @@ end package uart;
 package body uart is
 
     -- Parity bit generator. Returns '1' if number of bits set in @p data is even (for EVEN) or odd (for ODD) and '0' otherwise
-    function parity_gen(data : Std_logic_vector; parity_type: Parity) return Std_logic is
-        -- Intermediate result
-        variable intermediate : Std_logic := '0';
+    function parity_gen(data : Std_logic_vector; parity_type: ParityType) return Std_logic is
     begin
 
         -- Switch initial value for odd parity
         if (parity_type = EVEN) then
-            intermediate := '1';
+            return xor_reduce(data);
+        else 
+            return not(xor_reduce(data));
         end if;
-        -- XOR calculations
-        for i in 0 to (data'length - 1) loop
-            intermediate := data(i) xor intermediate;
-        end loop;
-        -- Return value
-        return intermediate;
-
     end function;
 
 end package body uart;
