@@ -52,9 +52,9 @@ package uart is
         constant STOP_BITS       : in  Natural;          -- Stop bits number (1-2)
         constant SIGNAL_NEGATION : in  Std_logic;        -- Optional logical negation of the entire signal
         constant DATA_NEGATION   : in  Std_logic;        -- Optional logical negation of the data bits
+        signal   rx              : in  Std_logic;        -- Serial wire
         signal   err             : out UartErrors;       -- Reception error
-        signal   data            : out Std_logic_vector; -- Word to be received
-        signal   rx              : in Std_logic         -- Serial wire
+        variable data            : out Std_logic_vector  -- Word to be received
     );
 
 end package uart;
@@ -147,9 +147,9 @@ package body uart is
         constant STOP_BITS       : in  Natural;          -- Stop bits number (1-2)
         constant SIGNAL_NEGATION : in  Std_logic;        -- Optional logical negation of the entire signal
         constant DATA_NEGATION   : in  Std_logic;        -- Optional logical negation of the data bits
+        signal   rx              : in  Std_logic;        -- Serial wire
         signal   err             : out UartErrors;       -- Reception error
-        signal   data            : out Std_logic_vector; -- Word to be received
-        signal   rx              : in  Std_logic         -- Serial wire
+        variable data            : out Std_logic_vector  -- Word to be received
     ) is
 
         -- Function to invert serial signal
@@ -211,9 +211,9 @@ package body uart is
         -- Output result
         err <= errBuf;
         if ((errBuf.parity_err or errBuf.start_err or errBuf.stop_err) = '1') then
-            data <= (others => 'X');
+            data := (others => 'X');
         else
-            data <= dataBuf;
+            data := dataBuf;
         end if;
 
     end procedure;

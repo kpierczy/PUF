@@ -1,11 +1,11 @@
 -- ===================================================================================================================================
 -- @ Author: Krzysztof Pierczyk
--- @ Create Time: 2021-04-23 22:35:50
--- @ Modified time: 2021-04-23 22:37:26
--- @ Description:
--- 
---     Sample transmitter package's testbench 
---
+-- @ Create Time: 2021-05-12 23:04:02
+-- @ Modified time: 2021-05-12 23:43:04
+-- @ Description: 
+--    
+--    Sample receiver package's testbench 
+--    
 -- ===================================================================================================================================
 
 library ieee;
@@ -19,7 +19,7 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity SampleTxTb is
+entity SampleRxTb is
     generic(
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
@@ -29,9 +29,11 @@ entity SampleTxTb is
 
         -- Bytes in the sample
         SAMPLE_BYTES : Positive := 4;
+        -- Gap cycles between subsequent samples transmitted 
+        SAMPLE_GAP : Natural := 1;
 
         -- Baud rate of the transmitter's entity
-        BAUD_RATE : Positive := 200_000_000; -- 921_600;
+        BAUD_RATE : Positive := 10_000_000; --921_600;
         -- Parity bit usage
         PARITY_USED : Std_logic := '1';
         -- Type of parity
@@ -43,11 +45,11 @@ entity SampleTxTb is
         -- Data negation
         DATA_NEGATION : Std_logic := '0'
     );
-end entity SampleTxTb;
+end entity SampleRxTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of SampleTxTb is
+architecture logic of SampleRxTb is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
@@ -59,26 +61,24 @@ architecture logic of SampleTxTb is
     -- System clock
     signal clk : Std_logic := '0';
 
-    -- Transmitter enable signal
-    signal transfer : Std_logic := '0';
-
     -- Busy flag
     signal busy : Std_logic;
-    -- Serial output
-    signal tx : Std_logic;
-
-    -- Data input
-    signal sampleToTransmit : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := 
-        Std_logic_vector(to_unsigned(11, SAMPLE_BYTES * BYTE_WIDTH));
-    -- Received data signal (for testing)
-    signal sampleReceived : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := (others => '0');
-
-    -- Reception error buffer
-    signal uartErr : UartErrors := (
+    -- Receiving errors
+    signal err : UartErrors := (
         start_err  => '0',
         stop_err   => '0',
         parity_err => '0'
     );
+    -- Serial input
+    signal rx : Std_logic := '0' xor SIGNAL_NEGATION;
+
+    -- Data input (for testing)
+    signal sampleToTransmit : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := 
+        Std_logic_vector(to_unsigned(11, SAMPLE_BYTES * BYTE_WIDTH));
+    -- Received data signal (buffer)
+    signal sampleReceivedBuf : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := (others => '0');
+    -- Received data signal
+    signal sampleReceived : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := (others => '0');
 
 begin
 
@@ -87,14 +87,17 @@ begin
     -- =================================================================================
 
     -- Clock signal
-    clk <= not clk after CLK_PERIOD / 2 when reset_n /= '0' else '0';
+    clock_tb(CLK_PERIOD, clk);
+
+    -- Reset signal
+    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
 
     -- =================================================================================
     -- Internal components
     -- =================================================================================
 
-    -- Transmitter instance
-    sampleTransmitter : entity work.SampleTx(logic)
+    -- Receiver instance
+    sampleReceiver : entity work.SampleRx(logic)
     generic map(
         SYS_CLK_HZ      => SYS_CLK_HZ,
         BAUD_RATE       => BAUD_RATE,
@@ -108,10 +111,10 @@ begin
     port map(
         reset_n     => reset_n,
         clk         => clk,
-        transfer    => transfer,
-        sample      => sampleToTransmit,
         busy        => busy,
-        tx          => tx
+        rx          => rx,
+        sample      => sampleReceivedBuf,
+        err         => err
     );
 
     -- =================================================================================
@@ -120,90 +123,90 @@ begin
 
     -- Sending process
     process is
-    begin
-        -- Set reset signal (active low)
-        reset_n <= '0';
-        -- Disable TX module
-        transfer <= '0';
-        -- Zero data buffer
-        sampleToTransmit <= (others=>'0');
-
-        -- Wait for system start
-        wait for SYS_RESET_TICKS * CLK_PERIOD;
-        -- Disable reset signal
-        reset_n <= '1';
-        -- Wait for transmission start
-        wait for 5 * CLK_PERIOD;
-
-        -- Send data in loop
-        loop
-            transfer  <= '1';
-            wait for CLK_PERIOD;
-            transfer  <= '0';
-            wait for CLK_PERIOD;
-            wait until busy = '0';
-            sampleToTransmit <= std_logic_vector(unsigned(sampleToTransmit) + 7);
-            wait for 10 * CLK_PERIOD;
-        end loop;
-
-    end process;    
-
-    -- Error checking
-    process is
-        -- Bytes received
-        variable bytesReceived : Natural range 0 to SAMPLE_BYTES := 0;
-        -- Buffer for received data
-        variable sampleReceivedBuf : Std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0) := (others => '0');
-        -- Buffer for byte received
+        -- Bytes transmitted
+        variable bytesTransmitted : Natural range 0 to SAMPLE_BYTES := 0;
+        -- Buffer for byte to be transmitted
         variable byteBuf : std_logic_vector(BYTE_WIDTH - 1 downto 0) := (others => '0');
     begin
 
-        -- Reset received word
-        sampleReceived <= (others => '0');
-        sampleReceivedBuf := (others => '0');
+        -- Zero data buffers
+        sampleToTransmit <= (others=>'0');
+        byteBuf := (others=>'0');
         -- Reset number of received bytes
-        bytesReceived := 0;
+        bytesTransmitted := 0;
 
+        -- Wait for end of reset state
+        wait until rising_edge(reset_n);
+
+        -- Wait a few cycle to let receiver stand up
+        wait for SYS_RESET_TICKS * CLK_PERIOD;
+
+        -- Start transmitting loop
         loop
 
-            -- Check whether all bytes was received
-            if(bytesReceived < SAMPLE_BYTES) then
+            -- Check whether all bytes was transmitted
+            if(bytesTransmitted < SAMPLE_BYTES) then
 
-                -- Receive serial byte
-                uart_rx_tb(
+                -- Select byte to be transmitted
+                byteBuf := sampleToTransmit((bytesTransmitted + 1) * BYTE_WIDTH - 1 downto bytesTransmitted * BYTE_WIDTH);
+
+                -- Transmit serial byte
+                uart_tx_tb(
                     BAUD_RATE,
                     PARITY_USED,
                     PARITY_TYPE,
                     STOP_BITS,
                     SIGNAL_NEGATION,
                     DATA_NEGATION,
-                    tx,
-                    uartErr,
-                    byteBuf
+                    byteBuf,
+                    rx
                 );
 
-                -- Put received byte into sample buffer
-                sampleReceivedBuf((bytesReceived + 1) * BYTE_WIDTH - 1 downto bytesReceived * BYTE_WIDTH) := byteBuf;
+                -- Increment number of transmitted bytes
+                bytesTransmitted := bytesTransmitted + 1;
 
-                -- Increment number of received bytes
-                bytesReceived := bytesReceived + 1;
-
-            -- If all bytes was received
+            -- If all bytes was transmitted
             else 
 
+                -- Wait a few cycle before sending nex samples
+                wait for CLK_PERIOD * SAMPLE_GAP;
                 -- Reset counter of received byte
-                bytesReceived := 0;
-                -- Copy received sample from the bufer
-                sampleReceived <= sampleReceivedBuf;
-
-                -- Check whether correct word received
-                if(sampleReceivedBuf /= sampleToTransmit) then
-                    sampleReceived <= (others => 'X');            
-                end if;
+                bytesTransmitted := 0;
+                -- Change value of the next sample to be transmitted
+                sampleToTransmit <= Std_logic_vector(Unsigned(sampleToTransmit) + to_unsigned(7, SAMPLE_BYTES * BYTE_WIDTH));
 
             end if;
 
         end loop;
+
+    end process;    
+
+    -- Receiving process checking
+    process is
+    begin
+
+        -- Zero data buffers
+        sampleReceived <= (others=>'0');
+
+        -- Wait for end of reset state
+        wait until rising_edge(reset_n);
+
+        -- Receive samples in loop
+        loop 
+
+            -- Wait for data reception
+            wait until falling_edge(busy);
+
+            -- Push data to the buffer
+            if((err.parity_err or err.start_err or err.stop_err) = '1') then
+                sampleReceived <= (others => 'X');
+            elsif(sampleReceivedBuf /= sampleToTransmit) then
+                sampleReceived <= (others => 'X');
+            else
+                sampleReceived <= sampleReceivedBuf;
+            end if;
+
+        end loop;        
     
     end process;
 

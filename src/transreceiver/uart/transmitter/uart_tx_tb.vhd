@@ -141,6 +141,8 @@ begin
 
     -- Error checking
     process is
+        -- Received data signal buf (for testing)
+        variable dataReceivedBuf : Std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
     begin
 
         -- Reset received word
@@ -153,6 +155,7 @@ begin
         wait for 15 * CLK_PERIOD;
 
         loop
+
             -- Receive serial data
             uart_rx_tb(
                 BAUD_RATE,
@@ -161,15 +164,19 @@ begin
                 STOP_BITS,
                 SIGNAL_NEGATION,
                 DATA_NEGATION,
+                tx,
                 err,
-                dataReceived,
-                tx
+                dataReceivedBuf
             );
-            wait for CLK_PERIOD;
+
+            -- Get data from the buffer
+            dataReceived <= dataReceivedBuf;
+
             -- Check whether correct word received
-            if(dataReceived /= dataToTransmit) then
+            if(dataReceivedBuf /= dataToTransmit) then
                 dataReceived <= (others => 'X');            
             end if;
+
         end loop;
     
     end process;

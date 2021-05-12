@@ -226,7 +226,7 @@ begin
                         state := STOP_ST;
                     end if;
 
-                -- Stop bit(s) sending
+                -- Stop bit(s) receiving
                 when STOP_ST =>
 
                     -- If all stop bits wasn't sent yet

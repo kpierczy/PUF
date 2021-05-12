@@ -4,8 +4,7 @@
 -- @ Modified time: 2021-05-12 14:18:51
 -- @ Description: 
 --    
---    Sample transmitting module based on the UartTx entity. Module provides a simple two-wire interface that enables observing
---    it's state and starting data transmission.
+--    Sample receiving module based on the UartRx entity
 --    
 -- ===================================================================================================================================
 
@@ -18,7 +17,19 @@ use work.uart.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity SampleTx is
+
+-- =============================================================================
+-- @brief Sample receiving module based on the UartRx entity. Module provides 
+--    a simple four-wire interface that enables observing it's state and
+--    identifying receiving errors. When all bytes of the new sample are
+--    the @out busy port is pulled from high to low and new sample is pushed
+--    to the @out data port.
+--    If any error occurse during reception of the sample, state of the @out
+--    data is not changed even though @out busy state transits. Additionally,
+--    @out err output is loaded with all reception errors ORed for a signle
+--    cycle of the system clock. 
+-- =============================================================================
+entity SampleRx is
 
     generic(
 
@@ -50,23 +61,22 @@ entity SampleTx is
         reset_n : in Std_logic;
         -- System clock
         clk : in Std_logic;
-        -- Transfer initialization signal (active high)
-        transfer : in Std_logic;
-        -- Sample to be transfered (latched on @in clk rising edge when @in transfer high and @out busy's low)
-        sample : in Std_logic_vector(SAMPLE_BYTES * 8 - 1 downto 0);
+        -- Serial input
+        rx : in Std_logic;
 
         -- 'Module busy' signal (active high)
         busy : out Std_logic;
-        -- Serial output
-        tx : out Std_logic
-
+        -- Sample received (pushed on @in busy falling edge when no error occured during sample's reception)
+        sample : out Std_logic_vector(SAMPLE_BYTES * 8 - 1 downto 0);
+        -- ORed state of the error flags of received bytes
+        err : out UartErrors
     );
 
-end entity SampleTx;
+end entity SampleRx;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of SampleTx is
+architecture logic of SampleRx is
 
     -- Size of the byte (just to not raw '8' in the code)
     constant BYTE_WIDTH : Positive := 8;
@@ -74,7 +84,7 @@ architecture logic of SampleTx is
     -- ===================== UART Signals ===================== --
 
     -- Uart transmission start signal
-    signal uartTransmit : std_logic;
+    signal uartErr : UartErrors;
     -- Uart data to be transmitted
     signal uartData : std_logic_vector(BYTE_WIDTH - 1 downto 0);
     -- Uart busy signal
@@ -85,7 +95,7 @@ begin
     -- Assert proper ratio of the system clock and baud rate
     assert (SYS_CLK_HZ / BAUD_RATE >= 2)
         report 
-            "SampleTx: Invalid value of the SYS_CLK_HZ (" & integer'image(SYS_CLK_HZ) & ")" & 
+            "SampleRx: Invalid value of the SYS_CLK_HZ (" & integer'image(SYS_CLK_HZ) & ")" & 
             "or/and BAUD_RATE (" & integer'image(BAUD_RATE) & ")"
     severity error;
 
@@ -93,8 +103,8 @@ begin
     -- Intenral UART entity
     -- =================================================================================
 
-    -- Transmitter instance
-    uartTransmitter : entity work.UartTx(logic)
+    -- Receiver instance
+    uartReceiver : entity work.UartRx(logic)
     generic map(
         SYS_CLK_HZ      => SYS_CLK_HZ,
         BAUD_RATE_MIN   => BAUD_RATE,
@@ -109,10 +119,10 @@ begin
         reset_n     => reset_n,
         clk         => clk,
         baud_period => SYS_CLK_HZ / BAUD_RATE - 1,
-        transfer    => uartTransmit,
-        data        => uartData,
+        rx          => rx,
         busy        => uartBusy,
-        tx          => tx
+        err         => uartErr,
+        data        => uartData
     );    
 
     -- =================================================================================
@@ -122,14 +132,16 @@ begin
     process(reset_n, clk) is
 
         -- Stages of the transmiter
-        type Stage is (IDLE_ST, PREPARE_TRANSMIT_ST, TRANSMIT_ST);
+        type Stage is (IDLE_ST, WAIT_FOR_BYTE_ST, RECEIVE_ST);
         -- Actual stage
         variable state : Stage;
 
-        -- Sample buffer (First byte is directly fetched to the UART input's)
-        variable sampleBuf : Std_logic_vector((SAMPLE_BYTES - 1) * BYTE_WIDTH - 1 downto 0);
         -- Oversampling pulse counter
-        variable bytesTransmitted : Natural range 0 to SAMPLE_BYTES;
+        variable bytesReceived : Natural range 0 to SAMPLE_BYTES;
+        -- Uart transmission start signal
+        variable errBuf : UartErrors;
+        -- Uart data to be transmitted
+        variable sampleBuf : std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0);
 
     begin
         -- Reset condition
@@ -137,20 +149,25 @@ begin
 
             -- Set outputs to default
             busy <= '0';
-            -- Reset internal signals
-            uartTransmit <= '0';
-            uartData <= (others => '0');
+            err <= (
+                start_err  => '0',
+                stop_err   => '0',
+                parity_err => '0'
+            );
+            sample <= (others => '0');
             -- Reset process' variables
+            bytesReceived := 0;
+            errBuf := (
+                start_err  => '0',
+                stop_err   => '0',
+                parity_err => '0'
+            );
             sampleBuf := (others => '0');
-            bytesTransmitted := 0;
             -- Default state: IDLE_ST
             state := IDLE_ST;
 
         -- Normal operation
         elsif(rising_edge(clk)) then
-
-            -- Dafult state of the UART transmission: disabled
-            uartTransmit <= '0';
 
             -- State machine
             case state is
@@ -158,55 +175,61 @@ begin
                 -- IDLE_ST
                 when IDLE_ST =>
 
-                    -- Transmit input pulled high
-                    if(transfer = '1') then
-
-                        -- Fetch data to the internal buffer
-                        sampleBuf := sample(sample'left downto BYTE_WIDTH);
-                        -- Zero counter of the transmitted bytes
-                        bytesTransmitted := 0;
-                        -- Set module's state to busy
+                    -- Check whether UART module started receiving
+                    if(uartBusy = '1') then
+                        -- Mark module as busy
                         busy <= '1';
-                        -- Fetch first byte to the UART's input
-                        uartData <= sample(BYTE_WIDTH - 1 downto 0);
-                        -- Enable UART Transmission
-                        uartTransmit <= '1';
-                        -- Switch state to PREPARE_TRANSMIT_ST
-                        state := PREPARE_TRANSMIT_ST;
-
+                        -- Switch state to RECEIVE_ST
+                        state := RECEIVE_ST;
                     end if;
 
                 -- Wait for UART to start transmission
-                when PREPARE_TRANSMIT_ST =>
+                when WAIT_FOR_BYTE_ST =>
 
                     if(uartBusy = '1') then
                         -- Switch state to TRANSMIT_ST
-                        state := TRANSMIT_ST;
+                        state := RECEIVE_ST;
                     end if;
 
-                -- TRANSMIT_ST
-                when TRANSMIT_ST =>
+                -- RECEIVE_ST
+                when RECEIVE_ST =>
 
-                    -- Check whether UART transmitted last byte
+                    -- Check whether UART received byte
                     if(uartBusy = '0') then
 
-                        -- Increment number of transmitted bytes
-                        bytesTransmitted := bytesTransmitted + 1;
-                        -- If there are some bytes to be transmitted
-                        if(bytesTransmitted /= SAMPLE_BYTES) then
+                        -- Increment number of received bytes
+                        bytesReceived := bytesReceived + 1;
+                        -- If there are some bytes to be received
+                        if(bytesReceived /= SAMPLE_BYTES) then
 
-                            -- Fetch data (@note @v dampleBuf does not hold first byte of the transmitted sample)
-                            uartData <= sampleBuf(bytesTransmitted * BYTE_WIDTH  - 1 downto (bytesTransmitted - 1) * BYTE_WIDTH);
-                            -- Enable UART to transmit the next byte
-                            uartTransmit <= '1';
+                            -- Fetch received data to the internal buffer
+                            sampleBuf(bytesReceived * BYTE_WIDTH  - 1 downto (bytesReceived - 1) * BYTE_WIDTH) := uartData;
+                            -- Fetch error code of the UART module
+                            errBuf.parity_err := errBuf.parity_err or uartErr.parity_err;
+                            errBuf.start_err  := errBuf.start_err  or uartErr.start_err;
+                            errBuf.stop_err   := errBuf.stop_err   or uartErr.stop_err;
                             -- Switch state to PREPARE_TRANSMIT_ST
-                            state := PREPARE_TRANSMIT_ST;
+                            state := WAIT_FOR_BYTE_ST;
 
-                        -- Else, if all bytes was transmitted
+                        -- Else, if all bytes was received
                         else
 
                             -- Switch module to the not-busy state
                             busy <= '0';
+                            -- Push sample to the output port if no error occurred
+                            if(not(errBuf.parity_err or errBuf.start_err or errBuf.stop_err) = '1') then
+                                sample <= sampleBuf;
+                            end if;
+                            -- Output error code to the output
+                            err <= errBuf;
+                            -- Clear error buffer
+                            errBuf := (
+                                start_err  => '0',
+                                stop_err   => '0',
+                                parity_err => '0'
+                            );
+                            -- Reset number of bytes received
+                            bytesReceived := 0;
                             -- Switch state to IDLE_ST
                             state := IDLE_ST;
 
