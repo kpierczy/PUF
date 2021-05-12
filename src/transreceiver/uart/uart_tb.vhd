@@ -38,7 +38,7 @@ end entity uart_tb;
 architecture logic of uart_tb is
 
     -- Actual parity
-    signal parity_type : Parity := EVEN;
+    signal parity_type : ParityType := EVEN;
     -- Counter value
     signal data : Std_logic_vector(DATA_WIDTH - 1 downto 0);
     -- Parity bit

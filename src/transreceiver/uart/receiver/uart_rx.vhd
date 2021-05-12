@@ -209,7 +209,7 @@ begin
 
                     end if;
 
-                -- Parity bit sending
+                -- Parity bit reciving
                 when PARITY_ST =>
 
                     -- If single baud's period didn't passed

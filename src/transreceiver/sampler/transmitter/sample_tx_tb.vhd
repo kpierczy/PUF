@@ -19,16 +19,16 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity uart_tx_tb is
+entity sample_tx_tb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Natural := 200_000_000;
-        -- Minimal baud rate of the transmitter's entity
-        BAUD_RATE_MIN : Positive := 9600;
+        SYS_CLK_HZ : Positive := 200_000_000;
+
+        -- Bytes in the sample
+        SAMPLE_BYTES : Positive := 4;
+
         -- Baud rate of the transmitter's entity
-        BAUD_RATE : Positive := 921_600;
-        -- Data width
-        DATA_WIDTH : Positive := 8;
+        BAUD_RATE : Positive := 200_000_000; -- 921_600;
         -- Parity bit usage
         PARITY_USED : Std_logic := '1';
         -- Type of parity
@@ -38,37 +38,47 @@ entity uart_tx_tb is
         -- Signal negation
         SIGNAL_NEGATION : Std_logic := '0';
         -- Data negation
-        DATA_NEGATION : Std_logic := '1'
+        DATA_NEGATION : Std_logic := '0'
     );
-end entity uart_tx_tb;
+end entity sample_tx_tb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of uart_tx_tb is
+architecture logic of sample_tx_tb is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
+    -- Size of the byte (just to not raw '8' in the code)
+    constant BYTE_WIDTH : Positive := 8;    
 
     -- Reset signal
     signal reset_n : Std_logic := '0';
     -- System clock
     signal clk : Std_logic := '0';
-    -- Ratio of the system clock's frequency and baud rate (minus 1)
-    signal baud_period : Natural range 0 to SYS_CLK_HZ / BAUD_RATE_MIN - 1 := SYS_CLK_HZ / BAUD_RATE - 1;
-    -- Serial output
-    signal tx : Std_logic;
+
+    -- Transmitter enable signal
+    signal transfer : Std_logic := '0';
 
     -- Busy flag
     signal busy : Std_logic;
-    -- Transmitter enable signal
-    signal transfer : Std_logic := '0';
-    -- Data input
-    signal dataToTransmit : Std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
-    -- Received data signal (for testing)
-    signal dataReceived : Std_logic_vector(DATA_WIDTH - 1 downto 0) := (others => '0');
+    -- Serial output
+    signal tx : Std_logic;
 
-    -- Transmission errors
-    signal err : UartErrors;
+    -- Data input
+    signal sampleToTransmit : Std_logic_vector(SAMPLE_BYTES * 8 - 1 downto 0) := (others => '0');
+    -- Received data signal (for testing)
+    signal sampleReceived : Std_logic_vector(SAMPLE_BYTES * 8 - 1 downto 0) := (others => '0');
+
+    -- Buffer for received data
+    signal sampleReceivedBuf : Std_logic_vector(SAMPLE_BYTES * 8 - 1 downto 0) := (others => '0');
+    -- Buffer for byte received
+    signal byteBuf : std_logic_vector(BYTE_WIDTH - 1 downto 0) := (others => '0');
+    -- Reception error buffer
+    signal uartErr : UartErrors := (
+        start_err  => '0',
+        stop_err   => '0',
+        parity_err => '0'
+    );
 
 begin
 
@@ -84,11 +94,11 @@ begin
     -- =================================================================================
 
     -- Transmitter instance
-    uartTransmitter : entity work.UartTx(logic)
+    sampleTransmitter : entity work.SampleTx(logic)
     generic map(
         SYS_CLK_HZ      => SYS_CLK_HZ,
-        BAUD_RATE_MIN   => BAUD_RATE_MIN,
-        DATA_WIDTH      => DATA_WIDTH,
+        BAUD_RATE       => BAUD_RATE,
+        SAMPLE_BYTES    => SAMPLE_BYTES,
         PARITY_USED     => PARITY_USED,
         PARITY_TYPE     => PARITY_TYPE,
         STOP_BITS       => STOP_BITS,
@@ -98,9 +108,8 @@ begin
     port map(
         reset_n     => reset_n,
         clk         => clk,
-        baud_period => baud_period,
-        transfer      => transfer,
-        data        => dataToTransmit,
+        transfer    => transfer,
+        sample      => sampleToTransmit,
         busy        => busy,
         tx          => tx
     );
@@ -117,7 +126,7 @@ begin
         -- Disable TX module
         transfer <= '0';
         -- Zero data buffer
-        dataToTransmit <= (others=>'0');
+        sampleToTransmit <= (others=>'0');
 
         -- Wait for system start
         wait for 10 * CLK_PERIOD;
@@ -133,7 +142,7 @@ begin
             transfer  <= '0';
             wait for CLK_PERIOD;
             wait until busy = '0';
-            dataToTransmit <= std_logic_vector(unsigned(dataToTransmit) + 7);
+            sampleToTransmit <= std_logic_vector(unsigned(sampleToTransmit) + 7);
             wait for 10 * CLK_PERIOD;
         end loop;
 
@@ -141,35 +150,60 @@ begin
 
     -- Error checking
     process is
+        -- Period of the single bit
+        constant BAUD_PERIOD :time := 1 sec / BAUD_RATE;
+        -- Bytes received
+        variable bytesReceived : Natural range 0 to SAMPLE_BYTES := 0;
     begin
 
         -- Reset received word
-        dataReceived <= (others => '0');
-        -- Reset error signals
-        err.parity_err <= '0';
-        err.start_err <= '0';
-        err.stop_err <= '0';
+        sampleReceived <= (others => '0');
+        sampleReceivedBuf <= (others => '0');
+        -- Reset number of received bytes
+        bytesReceived := 0;
 
         wait for 15 * CLK_PERIOD;
 
         loop
-            -- Receive serial data
-            uart_rx_tb(
-                BAUD_RATE,
-                PARITY_USED,
-                PARITY_TYPE,
-                STOP_BITS,
-                SIGNAL_NEGATION,
-                DATA_NEGATION,
-                err,
-                dataReceived,
-                tx
-            );
-            wait for CLK_PERIOD;
-            -- Check whether correct word received
-            if(dataReceived /= dataToTransmit) then
-                dataReceived <= (others => 'X');            
+            -- Check whether all bytes was received
+            if(bytesReceived < SAMPLE_BYTES) then
+
+                -- Receive serial byte
+                uart_rx_tb(
+                    BAUD_RATE,
+                    PARITY_USED,
+                    PARITY_TYPE,
+                    STOP_BITS,
+                    SIGNAL_NEGATION,
+                    DATA_NEGATION,
+                    uartErr,
+                    byteBuf,
+                    tx
+                );
+
+                -- Get byte to be receiv
+                sampleReceivedBuf((bytesReceived + 1) * BYTE_WIDTH - 1 downto bytesReceived * BYTE_WIDTH) <= byteBuf;
+
+                -- Increment number of received bytes
+                bytesReceived := bytesReceived + 1;
+
+            -- If all bytes was received
+            else 
+
+                wait for CLK_PERIOD;
+
+                -- Reset counter of received byte
+                bytesReceived := 0;
+                -- Copy received sample from the bufer
+                sampleReceived <= sampleReceivedBuf;
+
+                -- Check whether correct word received
+                if(sampleReceived /= sampleToTransmit) then
+                    sampleReceived <= (others => 'X');            
+                end if;
+
             end if;
+
         end loop;
     
     end process;
