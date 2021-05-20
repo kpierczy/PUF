@@ -21,6 +21,12 @@ package multiplexer is
     -- Universal multiplexer's input
     type vectorsArray is array(natural range <>) of std_logic_vector;
 
+    -- Unsigned vectors' array
+    type unsignedVectorsArray is array(natural range <>) of Unsigned;
+    
+    -- Natural vectors' array
+    type naturalVectorsArray is array(natural range <>) of Natural;
+
 end package;
 
 -- ===================================================================================================================================
@@ -32,7 +38,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.multiplexer.all;
 
--- ------------------------------------------------------------- Entity --------------------------------------------------------------
+-- -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
 entity UniversalMultiplexer is
     generic(
@@ -57,4 +63,4 @@ architecture logic of UniversalMultiplexer is
 begin
     -- Assign proper input's element to the output
     data_out <= data_in(to_integer(unsigned(sel)));
-end UniversalMultiplexer;
+end architecture;

@@ -16,7 +16,10 @@ entity main is
         PARITY_TYPE : ParityType := EVEN;
         STOP_BITS : Positive := 2;
         SIGNAL_NEGATION : Std_logic := '0';
-        DATA_NEGATION : Std_logic := '0'
+        DATA_NEGATION : Std_logic := '0';
+        SAMPLE_WIDTH : Positive := 16;
+        GAIN_WIDTH : Positive := 12;
+        TWO_POW_DIV : Natural := 7
     );
     port(
         reset_n : in Std_logic;
@@ -27,7 +30,13 @@ entity main is
         busyTx, busyRx : out Std_logic;
         tx : out Std_logic;
         rx : in Std_logic;
-        err : out UartErrors
+        err : out UartErrors;
+        valid_in : in std_logic;
+        valid_out : out std_logic;
+        sample_in : in Signed(SAMPLE_WIDTH - 1 downto 0);
+        gain_in : in Unsigned(GAIN_WIDTH - 1 downto 0);
+        saturation_in : in Unsigned(SAMPLE_WIDTH - 2 downto 0);
+        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0)
     );
 
 end entity;
@@ -80,6 +89,24 @@ begin
         busy        => busyRx,
         err         => err,
         rx          => rx
+    );
+
+    -- Clipping effect
+    clipper : entity work.ClippingEffect(logic)
+    generic map(
+        SAMPLE_WIDTH => SAMPLE_WIDTH,
+        GAIN_WIDTH   => GAIN_WIDTH,
+        TWO_POW_DIV  => TWO_POW_DIV
+    )
+    port map(
+        reset_n       => reset_n,
+        clk           => clk,
+        valid_in      => valid_in,
+        valid_out     => valid_out,
+        sample_in     => sample_in,
+        gain_in       => gain_in,
+        saturation_in => saturation_in,
+        sample_out    => sample_out
     );
 
 end architecture;

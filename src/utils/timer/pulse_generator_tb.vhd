@@ -16,12 +16,12 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity pulse_generator_tb is
-end entity pulse_generator_tb;
+entity PulseGeneratorTb is
+end entity PulseGeneratorTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of pulse_generator_tb is
+architecture logic of PulseGeneratorTb is
      
     -- Type of signal generation
     type Generation is (SCHEDULED, RANDOM);

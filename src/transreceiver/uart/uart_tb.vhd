@@ -16,7 +16,7 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity uart_tb is
+entity UartTb is
     generic(
         -- Data width
         DATA_WIDTH : Positive := 8;
@@ -31,11 +31,11 @@ entity uart_tb is
         -- Max time between random toggles of the parity
         MAX_PARITY_TOGGLE_TIME : Time := 1000 ns
     );
-end entity uart_tb;
+end entity UartTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of uart_tb is
+architecture logic of UartTb is
 
     -- Actual parity
     signal parity_type : ParityType := EVEN;

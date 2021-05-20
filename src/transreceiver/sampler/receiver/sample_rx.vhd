@@ -27,7 +27,7 @@ use work.uart.all;
 --    If any error occurse during reception of the sample, state of the @out
 --    data is not changed even though @out busy state transits. Additionally,
 --    @out err output is loaded with all reception errors ORed for a signle
---    cycle of the system clock. 
+--    cycle of the system clock.
 -- =============================================================================
 entity SampleRx is
 
@@ -141,7 +141,7 @@ begin
         -- Uart transmission start signal
         variable errBuf : UartErrors;
         -- Uart data to be transmitted
-        variable sampleBuf : std_logic_vector(SAMPLE_BYTES * BYTE_WIDTH - 1 downto 0);
+        variable sampleBuf : std_logic_vector((SAMPLE_BYTES - 1) * BYTE_WIDTH - 1 downto 0);
 
     begin
         -- Reset condition
@@ -191,7 +191,7 @@ begin
                         state := RECEIVE_ST;
                     end if;
 
-                -- RECEIVE_ST
+                -- UART is receiving byte
                 when RECEIVE_ST =>
 
                     -- Check whether UART received byte
@@ -199,6 +199,7 @@ begin
 
                         -- Increment number of received bytes
                         bytesReceived := bytesReceived + 1;
+
                         -- If there are some bytes to be received
                         if(bytesReceived /= SAMPLE_BYTES) then
 
@@ -218,7 +219,7 @@ begin
                             busy <= '0';
                             -- Push sample to the output port if no error occurred
                             if(not(errBuf.parity_err or errBuf.start_err or errBuf.stop_err) = '1') then
-                                sample <= sampleBuf;
+                                sample <= uartData & sampleBuf;
                             end if;
                             -- Output error code to the output
                             err <= errBuf;

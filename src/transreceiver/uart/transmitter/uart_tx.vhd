@@ -155,7 +155,7 @@ begin
                 when START_ST =>
 
                     -- If single baud's period didn't passed
-                    if(baudCounter /= baudPeriod) then
+                    if(baudCounter /= baudPeriod - 1) then
                         -- Increment baud counter
                         baudCounter := baudCounter + 1;
                     -- Otherwise
@@ -178,7 +178,7 @@ begin
                     if(bitsCounter /= DATA_WIDTH - 1) then
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod) then
+                        if(baudCounter /= baudPeriod - 1) then
                             -- Increment baud counter
                             baudCounter := baudCounter + 1;
                         -- Otherwise
@@ -198,7 +198,7 @@ begin
                     else
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod) then
+                        if(baudCounter /= baudPeriod - 1) then
                             baudCounter := baudCounter + 1; -- Increment baud counter
                         -- Otherwise (all data bits was sent)
                         else
@@ -230,7 +230,7 @@ begin
                 when PARITY_ST =>
 
                     -- If single baud's period didn't passed
-                    if(baudCounter /= baudPeriod) then
+                    if(baudCounter /= baudPeriod - 1) then
                         -- Increment baud counter
                         baudCounter := baudCounter + 1; 
                     -- Otherwise

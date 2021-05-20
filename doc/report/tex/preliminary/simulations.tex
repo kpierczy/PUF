@@ -1,0 +1,9 @@
+% ================================================================================================================================== %
+% --------------------------------------------------------- Simulations ------------------------------------------------------------ %
+% ================================================================================================================================== %
+
+\section{Planowane symulacje}
+
+Planowane symulacje można podzielić na dwie zasadnicze kategorie. Pierwsza z~nich obejmuje proste testy jednostkowe \textbf{w~skali mikro}. Mowa tu o~modułach takich jak generator taktowania dla UARTa, układ mnożący, czy generator fali trójkątnej wykorzystywany w~algorytmach przetwarzania sygnału. Każdemu z~tych elementów powinien odpowiadać prosty podprojekt typu \textit{testbench}, który weryfikuje poprawność jego działania. Chociaż tworzenie tak drobnych elementów symulacyjnych może być do pewnego stopnia uciążliwe przy większej ilości testowanych elementów, to jednak doświadczenie pochodzące programowania pokazuje, że pozwala to zapobiec eskalacji wpływu drobnych błędów na działanie systemu jako całości.
+
+Drugą kategorią symulacji będą testy systemowe sprawdzające \textbf{makroskopowe} działanie poszczególnych bloków funkcjonalnych. Tutaj również każdy z~modułów powinien otrzymać dedykowany projekt testowy. W~tym przypadku poza poprawnością działania podsystemów zostanie również zweryfikowana ich wydajność. Oszacowanie czasów przetwarzania danych przez dany blok funkcjonalny oraz jego złożoność przestrzenna (wymagana liczba zasobów układu FPGA) pozwolą z~jednej strony określić warunki krańcowe ich funkcjonowania, a~z~drugiej oszczować potencjalne możliwości rozwoju systemu np. o~dodatkowe efekty.

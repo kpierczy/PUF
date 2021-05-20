@@ -16,12 +16,16 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity counter_tb is
-end entity counter_tb;
+entity CounterTb is
+    generic(
+        -- Width of the tested counter
+        COUNTER_WIDTH : positive
+    );
+end entity CounterTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of counter_tb is
+architecture logic of CounterTb is
      
      -- System clock period
      constant CLK_PERIOD : Time := 20 ns;

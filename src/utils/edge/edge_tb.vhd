@@ -16,12 +16,12 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity edge_tb is
-end entity edge_tb;
+entity EdgeTb is
+end entity EdgeTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of edge_tb is
+architecture logic of EdgeTb is
      
      -- System clock period
      constant CLK_PERIOD : Time := 20 ns;
@@ -151,7 +151,7 @@ begin
 
     -- Example random signal
     process (clk) is
-        variable next_toggle : Time := 0ns;
+        variable next_toggle : Time := 0 ns;
     begin
         if(rising_edge(clk) and (now > next_toggle)) then
             sig_sync <= not sig_sync;

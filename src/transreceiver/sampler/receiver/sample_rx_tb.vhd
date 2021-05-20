@@ -28,12 +28,12 @@ entity SampleRxTb is
         SYS_CLK_HZ : Positive := 200_000_000;
 
         -- Bytes in the sample
-        SAMPLE_BYTES : Positive := 4;
+        SAMPLE_BYTES : Positive := 3;
         -- Gap cycles between subsequent samples transmitted 
         SAMPLE_GAP : Natural := 1;
 
         -- Baud rate of the transmitter's entity
-        BAUD_RATE : Positive := 10_000_000; --921_600;
+        BAUD_RATE : Positive := 2_000_000;
         -- Parity bit usage
         PARITY_USED : Std_logic := '1';
         -- Type of parity
@@ -168,12 +168,12 @@ begin
             -- If all bytes was transmitted
             else 
 
-                -- Wait a few cycle before sending nex samples
-                wait for CLK_PERIOD * SAMPLE_GAP;
                 -- Reset counter of received byte
                 bytesTransmitted := 0;
                 -- Change value of the next sample to be transmitted
                 sampleToTransmit <= Std_logic_vector(Unsigned(sampleToTransmit) + to_unsigned(7, SAMPLE_BYTES * BYTE_WIDTH));
+                -- Wait a few cycle before sending nex samples
+                wait for CLK_PERIOD * SAMPLE_GAP;
 
             end if;
 

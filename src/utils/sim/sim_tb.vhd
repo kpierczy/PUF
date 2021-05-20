@@ -1,7 +1,7 @@
  -- ===================================================================================================================================
  -- @ Author: Krzysztof Pierczyk
  -- @ Create Time: 2021-04-26 01:37:43
- -- @ Modified time: 2021-04-26 13:33:45
+ -- @ Modified time: 2021-05-17 10:35:05
  -- @ Description: 
  --    
  --    Testbench for simulation utilities package
@@ -15,12 +15,12 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity sim_tb is
-end entity sim_tb;
+entity SimTb is
+end entity SimTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of sim_tb is
+architecture logic of SimTb is
      
     -- Example signal used for testing edge-detection
     signal real_val : Real := 0.0;

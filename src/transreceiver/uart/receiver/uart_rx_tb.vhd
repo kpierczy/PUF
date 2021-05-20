@@ -18,14 +18,14 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity uart_rx_tb is
+entity UartRxTb is
     generic(
         -- Frequency of the clock beating the entity (used to compute width of the @in baud_period input)
         SYS_CLK_HZ : Positive := 100_000_000;
         -- Minimal baud rate possible to be grenerated by the entity (used to compute width of the @in baud_period input)
         BAUD_RATE_MIN : Positive := 9600;
         -- Baud rate
-        BAUD_RATE : Positive := 20_000_000;-- 921_600;
+        BAUD_RATE : Positive := 2_000_000;
         -- Data width
         DATA_WIDTH : Positive range 5 to 8 := 8;
         -- Parity usage
@@ -37,13 +37,13 @@ entity uart_rx_tb is
         -- Signal negation (Defaults to standard RS-232, i.e. negated signal and data)
         SIGNAL_NEGATION : Std_logic := '0';
         -- Data negation (Defaults to standard RS-232, i.e. negated signal and data)
-        DATA_NEGATION : Std_logic := '1'
+        DATA_NEGATION : Std_logic := '0'
     );
-end entity uart_rx_tb;
+end entity UartRxTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of uart_rx_tb is  
+architecture logic of UartRxTb is  
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    

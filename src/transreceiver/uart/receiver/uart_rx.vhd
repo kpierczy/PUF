@@ -10,7 +10,8 @@
 -- ===================================================================================================================================
 
 -- ===================================================================================================================================
--- A generic UART receiver with adjustable baudrate and oversampling rate
+-- @brief A generic UART receiver with adjustable baudrate and oversampling rate
+-- @note 
 -- ===================================================================================================================================
 
 library ieee;
@@ -176,7 +177,7 @@ begin
                     if(bitsCounter /= DATA_WIDTH) then
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod) then
+                        if(baudCounter /= baudPeriod - 1) then
                             -- Increment baud counter
                             baudCounter := baudCounter + 1;
                         -- Otherwise
@@ -213,7 +214,7 @@ begin
                 when PARITY_ST =>
 
                     -- If single baud's period didn't passed
-                    if(baudCounter /= baudPeriod) then
+                    if(baudCounter /= baudPeriod - 1) then
                         -- Increment baud counter
                         baudCounter := baudCounter + 1; 
                     -- Otherwise
@@ -233,7 +234,7 @@ begin
                     if(bitsCounter /= STOP_BITS) then
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod) then
+                        if(baudCounter /= baudPeriod - 1) then
                             -- Increment baud counter
                             baudCounter := baudCounter + 1;
                         -- Otherwise

@@ -1,0 +1,82 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.1 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global}
+    \entry{uart}{online}{}
+      \field{sortinit}{1}
+      \field{sortinithash}{50c6687d7fc80f50136d75228e3c59ba}
+      \field{labeltitlesource}{title}
+      \field{title}{Introduction to UART}
+      \verb{urlraw}
+      \verb https://www.weekitech.com/2019/05/13/introduction-to-uart/
+      \endverb
+      \verb{url}
+      \verb https://www.weekitech.com/2019/05/13/introduction-to-uart/
+      \endverb
+    \endentry
+    \entry{uart_frame}{online}{}
+      \field{sortinit}{3}
+      \field{sortinithash}{a37a8ef248a93c322189792c34fc68c9}
+      \field{labeltitlesource}{title}
+      \field{title}{UART Explained}
+      \verb{urlraw}
+      \verb https://developer.electricimp.com/resources/uart
+      \endverb
+      \verb{url}
+      \verb https://developer.electricimp.com/resources/uart
+      \endverb
+    \endentry
+    \entry{uart_core}{online}{}
+      \field{sortinit}{5}
+      \field{sortinithash}{5dd416adbafacc8226114bc0202d5fdd}
+      \field{labeltitlesource}{title}
+      \field{title}{UART (VHDL)}
+      \verb{urlraw}
+      \verb https://www.digikey.com/eewiki/pages/viewpage.action?pageId=59507062
+      \endverb
+      \verb{url}
+      \verb https://www.digikey.com/eewiki/pages/viewpage.action?pageId=59507062
+      \endverb
+    \endentry
+    \entry{fpga_pedal}{article}{}
+      \name{author}{1}{}{%
+        {{hash=8f51a54711c08ec998bc7e705120cde6}{%
+           family={Robles},
+           familyi={R\bibinitperiod},
+           given={Carson},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{8f51a54711c08ec998bc7e705120cde6}
+      \strng{fullhash}{8f51a54711c08ec998bc7e705120cde6}
+      \strng{bibnamehash}{8f51a54711c08ec998bc7e705120cde6}
+      \strng{authorbibnamehash}{8f51a54711c08ec998bc7e705120cde6}
+      \strng{authornamehash}{8f51a54711c08ec998bc7e705120cde6}
+      \strng{authorfullhash}{8f51a54711c08ec998bc7e705120cde6}
+      \field{sortinit}{7}
+      \field{sortinithash}{f615fb9c6fba11c6f962fb3fd599810e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{An FPGA Implementation of Digital Guitar Effects}
+      \field{year}{2019}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

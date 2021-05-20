@@ -3,6 +3,11 @@
     "editor.wordWrap": "on",
     "latex-workshop.latex.outDir": "out",
 
+    // Icons
+    "vsicons.associations.folders": [
+        {"icon": "docs", "extensions": ["report"], "format": "svg"},
+    ],
+
     // Autoheader
     "autoHeader": {
         "format": {

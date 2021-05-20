@@ -19,7 +19,7 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity uart_tx_tb is
+entity UartTxTb is
     generic(
         -- System clock frequency
         SYS_CLK_HZ : Natural := 200_000_000;
@@ -40,11 +40,11 @@ entity uart_tx_tb is
         -- Data negation
         DATA_NEGATION : Std_logic := '1'
     );
-end entity uart_tx_tb;
+end entity UartTxTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of uart_tx_tb is
+architecture logic of UartTxTb is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
