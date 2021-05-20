@@ -53,7 +53,7 @@ package sim is
     -- Wave generators
     -- ===================================================================
 
-    -- Generates sine wave updating samples at falling edge of the clock
+    -- Generates sine wave updating samples at rising edge of the clock
     procedure generate_sin(
         -- System cl    ock's frequency
         constant SYS_CLK_HZ : Positive;
@@ -73,7 +73,7 @@ package sim is
         signal wave : out Real
     );
 
-    -- Generates random `stairs` with values in given range
+    -- Generates random `stairs` with values in given range updating samples at rising edge of the clock
     procedure generate_random_stairs(
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
@@ -201,22 +201,19 @@ package body sim is
         -- Counter used to generate sinus wave
         variable ticks : Positive;
     begin
-
-        -- Reset condition
+        -- -- Reset condition
         ticks := 0;
         wave <= 0.0;
-
-        -- Wait for end of reset
+        -- --Wait for the first rising edge after reset
         wait until reset_n = '1';
-        wait until falling_edge(clk);
-
-        -- Update wave on falling edges
+        wait until rising_edge(clk);
+        -- -- Update wave on rising edges
         loop
             ticks := ticks + 1;
             wave <= AMPLITUDE * sin(Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
             wait for CLK_PERIOD;
         end loop;
-    
+
     end procedure;
 
 

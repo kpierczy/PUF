@@ -164,17 +164,22 @@ begin
 
         -- Update `valid_in` in predefined sequence
         loop
+
             -- Wait for rising edge
             wait until rising_edge(clk);
+
             -- Inform about new sample
             valid_in <= '1';
             -- Wait a cycle to pull `vali_in` low
             wait for CLK_PERIOD;
             valid_in <= '0';
+
             -- Wait for the end of conversion
             wait until falling_edge(valid_out);
-            -- Wait for the next cycle
+
+            -- Wait a gap time before triggering the next cycle
             wait for CONVERSIONS_GAP;
+
         end loop;
     end process;
 
@@ -242,6 +247,7 @@ begin
         -- Wait for end of reset
         wait until reset_n = '1';
 
+        -- Validate module's output in loop
         loop
 
             -- Wait on the next rising edge after `valid_in` is pulled high
@@ -252,9 +258,9 @@ begin
             gain_buf := gain_in;
             saturation_buf := saturation_in;
 
-            -- Wait on the nex clk's rising edge after `valid_out` pulled hight
+            -- Wait on the nex clk's falling edge after `valid_out` pulled high
             wait until valid_out = '1';
-            wait for CLK_PERIOD;
+            wait until falling_edge(clk);
             
             -- Compute multiplication with division
             result := resize(sample_buf * Signed(resize(gain_buf, GAIN_WIDTH + 1)) / 2**TWO_POW_DIV, result'length);

@@ -21,6 +21,8 @@ entity DspTb is
     generic(
         -- Data width
         DATA_WIDTH : Positive := 8;
+        -- Number of bits to be shifted right after multiplication
+        constant TWO_POW_DIV : in Natural := 3;
         -- Min time between random toggles of the input data
         MIN_DATA_TOGGLE_TIME : Time := 10 ns;
         -- Max time between random toggles of the input data
@@ -56,7 +58,7 @@ architecture logic of DspTb is
     signal sum_signed_valid : std_logic;
 
     -- Result of unsigned multiplication
-    signal mul_unsigned : Unsigned(DATA_WIDTH * 2 - 2 downto 0);
+    signal mul_unsigned : Unsigned(DATA_WIDTH * 2 - TWO_POW_DIV - 2 downto 0);
     -- Expected result of unsigned multiplication
     signal mul_unsigned_expected : Unsigned(mul_unsigned'length - 1 downto 0);
     -- Error flag of unsigned multiplication
@@ -133,22 +135,24 @@ begin
 
     -- Multiplication of two unsigned numbers with saturation
     mulUnsignedSat(
-        a_in       => a_unsigned,
-        b_in       => b_unsigned,
-        result_out => mul_unsigned,
-        err_out    => mul_unsigned_err
+        TWO_POW_DIV => TWO_POW_DIV,
+        a_in        => a_unsigned,
+        b_in        => b_unsigned,
+        result_out  => mul_unsigned,
+        err_out     => mul_unsigned_err
     );
 
     -- Multiplication of two signed numbers with saturation
     mulSignedSat(
-        a_in       => a_signed,
-        b_in       => b_signed,
-        result_out => mul_signed,
-        err_out    => mul_signed_err
+        TWO_POW_DIV => TWO_POW_DIV,
+        a_in        => a_signed,
+        b_in        => b_signed,
+        result_out  => mul_signed,
+        err_out     => mul_signed_err
     );
 
     -- =================================================================================
-    -- Procedure's validation
+    -- Unsigned sum procedure's validation
     -- =================================================================================
 
     -- Validate unsigned summation with saturation
@@ -176,6 +180,9 @@ begin
         end if;
     end process;
 
+    -- =================================================================================
+    -- Signed sum procedure's validation
+    -- =================================================================================
 
     -- Validate signed summation with saturation
     process(sum_signed) is
@@ -208,18 +215,21 @@ begin
         end if;
     end process;
 
+    -- =================================================================================
+    -- Unsigned multiplication procedure's validation
+    -- =================================================================================
 
     -- Validate unsigned multiplication with saturation
     process(mul_unsigned) is
         -- Length of the result
-        constant RESULT_WIDTH : Positive := mul_unsigned_expected'length;
+        constant RESULT_WIDTH : Positive := a_unsigned'length + b_unsigned'length;
         -- Max unsigned value with RESULT_WIDTH bits
-        constant MAX_VALUE : Unsigned(RESULT_WIDTH - 1 downto 0) := (others => '1');
+        constant MAX_VALUE : Unsigned(mul_unsigned_expected'length - 1 downto 0) := (others => '1');
         -- Local copy of expected result of unsigned multiplication
-        variable mul_unsigned_expected_var : Unsigned(RESULT_WIDTH - 1 downto 0);
+        variable mul_unsigned_expected_var : Unsigned(mul_unsigned_expected'length - 1 downto 0);
     begin
         -- Establish expected multiplication's value
-        if(resize(a_unsigned, RESULT_WIDTH * 2) * resize(b_unsigned, RESULT_WIDTH * 2) > MAX_VALUE) then
+        if(a_unsigned * b_unsigned / 2**TWO_POW_DIV > resize(MAX_VALUE, RESULT_WIDTH)) then
             mul_unsigned_expected_var := MAX_VALUE;
         else
             mul_unsigned_expected_var := resize(a_unsigned * b_unsigned, RESULT_WIDTH);
@@ -234,6 +244,9 @@ begin
         end if;
     end process;
 
+    -- =================================================================================
+    -- Signed multiplication procedure's validation
+    -- =================================================================================
 
     -- Validate signed multiplication with saturation
     process(mul_signed) is

@@ -43,6 +43,8 @@ package dsp is
 
     -- Multiplication of two unsigned numbers with saturation
     procedure mulUnsignedSat( 
+        -- Number of bits to be shifted right after multiplication
+        constant TWO_POW_DIV : in Natural := 0;
         -- Inputs
         signal a_in, b_in : in  Unsigned;
         -- Output
@@ -53,6 +55,8 @@ package dsp is
 
     -- Multiplication of two signed numbers with saturation
     procedure mulSignedSat(
+        -- Number of bits to be shifted right after multiplication
+        constant TWO_POW_DIV : in Natural := 0;
         -- Inputs
         signal a_in, b_in : in  Signed;
         -- Output
@@ -187,6 +191,8 @@ package body dsp is
 
     -- Multiplication of two unsigned numbers with saturation
     procedure mulUnsignedSat(
+        -- Number of bits to be shifted right after multiplication
+        constant TWO_POW_DIV : in Natural := 0;
         -- Inputs
         signal a_in, b_in : in Unsigned;
         -- Output
@@ -199,12 +205,12 @@ package body dsp is
         constant MAX_VALUE : Unsigned(result_out'length - 1 downto 0) := (others => '1');
 
         -- Result of the multiplication
-        variable result : Unsigned(maximum(a_in'length, b_in'length) * 2 - 1 downto 0);
+        variable result : Unsigned(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
 
     begin
 
         -- Multiply inputs
-        result := resize(a_in * b_in, result'length);
+        result := resize(a_in * b_in / 2**TWO_POW_DIV, result'length);
 
         -- If overflow occurred
         if(result > MAX_VALUE) then
@@ -225,6 +231,8 @@ package body dsp is
 
     -- Multiplication of two signed numbers with saturation
     procedure mulSignedSat(
+        -- Number of bits to be shifted right after multiplication
+        constant TWO_POW_DIV : in Natural := 0;
         -- Inputs
         signal a_in, b_in : in  Signed;
         -- Output
@@ -241,12 +249,12 @@ package body dsp is
             (result_out'length - 1 => '1', others => '0');
 
         -- Result of the multiplication
-        variable result : Signed(maximum(a_in'length, b_in'length) * 2 - 1 downto 0);
+        variable result : Unsigned(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
 
     begin
 
         -- Multiply inputs
-        result := resize(a_in * b_in, result'length);
+        result := resize(a_in * b_in / 2**TWO_POW_DIV, result'length);
 
         -- If overflow occurred
         if(result > MAX_VALUE) then
