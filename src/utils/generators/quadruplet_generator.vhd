@@ -36,7 +36,7 @@ entity QuadrupletGenerator is
         ADDR_WIDTH : Positive;
         -- Offset address of samples in the memory
         SAMPLE_ADDR_OFFSET : Natural;
-        -- Latency (in cycles of @in clk) fof the BRAM read (1 for data collection on the next cycle after ena_out = '1')
+        -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
         BRAM_LATENCY : Positive := 1
     );
     port(
@@ -112,7 +112,7 @@ begin
         -- Actual stage
         variable state : Stage;
 
-        -- Stages of the module
+        -- Types of quarters
         type QuarterId is (Q1, Q2, Q3, Q4);
         -- Actual stage
         variable quarter : QuarterId;
@@ -142,9 +142,6 @@ begin
 
         -- Normal operation
         elsif(rising_edge(clk)) then
-            
-            -- Disable request for read by default
-            ena_out <= '0';
 
             -- State machine
             case state is 
@@ -167,9 +164,6 @@ begin
 
                 -- Wait for data from BRAM
                 when WAIT_FOR_DATA_ST =>
-
-                    -- Decrement latency cycles' counter
-                    latency_ticks := latency_ticks - 1;
 
                     -- Check whether latency gap ended
                     if(latency_ticks = 0) then
@@ -204,13 +198,17 @@ begin
                         else
                             quarter_samples := quarter_samples + 1;
                         end if;
-
+            
+                        -- Disable request for read
+                        ena_out <= '0';
                         -- Mark module as free
                         busy <= '0';
                         -- Change state
                         state := IDLE_ST;
 
-
+                    -- Else, decrement latency cycles' counter
+                    else
+                        latency_ticks := latency_ticks - 1;
                     end if;
 
             end case;

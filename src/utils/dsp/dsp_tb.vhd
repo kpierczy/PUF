@@ -45,8 +45,6 @@ architecture logic of DspTb is
     signal sum_unsigned_expected : Unsigned(sum_unsigned'length - 1 downto 0);
     -- Error flag of unsigned summation
     signal sum_unsigned_err : std_logic;
-    -- `Valid output` flag for unsigned summation
-    signal sum_unsigned_valid : std_logic;
 
     -- Result of signed summation
     signal sum_signed : Signed(DATA_WIDTH - 1 downto 0);
@@ -54,8 +52,6 @@ architecture logic of DspTb is
     signal sum_signed_expected : Signed(sum_signed'length - 1 downto 0);
     -- Error flag of signed summation
     signal sum_signed_err : std_logic;
-    -- `Valid output` flag for signed summation
-    signal sum_signed_valid : std_logic;
 
     -- Result of unsigned multiplication
     signal mul_unsigned : Unsigned(DATA_WIDTH * 2 - TWO_POW_DIV - 2 downto 0);
@@ -63,8 +59,6 @@ architecture logic of DspTb is
     signal mul_unsigned_expected : Unsigned(mul_unsigned'length - 1 downto 0);
     -- Error flag of unsigned multiplication
     signal mul_unsigned_err : std_logic;
-    -- `Valid output` flag for unsigned multiplication
-    signal mul_unsigned_valid : std_logic;
 
     -- Result of signed multiplication
     signal mul_signed : Signed(DATA_WIDTH - 1 downto 0);
@@ -72,8 +66,6 @@ architecture logic of DspTb is
     signal mul_signed_expected : Signed(mul_signed'length - 1 downto 0);
     -- Error flag of signed multiplication
     signal mul_signed_err : std_logic;
-    -- `Valid output` flag for signed multiplication
-    signal mul_signed_valid : std_logic;
 
 begin
 
@@ -170,13 +162,11 @@ begin
         else
             sum_unsigned_expected_var := a_unsigned + b_unsigned;
         end if;
-        -- Make expected value observable
-        sum_unsigned_expected <= sum_unsigned_expected_var;
         -- Check if procedure's output is as expected
-        if(sum_unsigned = sum_unsigned_expected_var) then
-            sum_unsigned_valid <= '1';
+        if(sum_unsigned /= sum_unsigned_expected_var) then
+            sum_unsigned_expected <= (others => 'X');
         else
-            sum_unsigned_valid <= '0';
+            sum_unsigned_expected <= sum_unsigned_expected_var;
         end if;
     end process;
 
@@ -205,13 +195,11 @@ begin
         else
             sum_signed_expected_var := a_signed + b_signed;
         end if;
-        -- Make expected value observable
-        sum_signed_expected <= sum_signed_expected_var;
         -- Check if procedure's output is as expected
-        if(sum_signed = sum_signed_expected_var) then
-            sum_signed_valid <= '1';
+        if(sum_unsigned /= sum_signed_expected_var) then
+            sum_signed_expected <= (others => 'X');
         else
-            sum_signed_valid <= '0';
+            sum_signed_expected <= sum_signed_expected_var;
         end if;
     end process;
 
@@ -234,13 +222,11 @@ begin
         else
             mul_unsigned_expected_var := resize(a_unsigned * b_unsigned, RESULT_WIDTH);
         end if;
-        -- Make expected value observable
-        mul_unsigned_expected <= mul_unsigned_expected_var;
         -- Check if procedure's output is as expected
-        if(mul_unsigned = mul_unsigned_expected_var) then
-            mul_unsigned_valid <= '1';
+        if(sum_unsigned /= mul_unsigned_expected_var) then
+            mul_unsigned_expected <= (others => 'X');
         else
-            mul_unsigned_valid <= '0';
+            mul_unsigned_expected <= mul_unsigned_expected_var;
         end if;
     end process;
 
@@ -269,15 +255,12 @@ begin
         else
             mul_signed_expected_var := resize(a_signed * b_signed, RESULT_WIDTH);
         end if;
-        -- Make expected value observable
-        mul_signed_expected <= mul_signed_expected_var;
         -- Check if procedure's output is as expected
-        if(mul_signed = mul_signed_expected_var) then
-            mul_signed_valid <= '1';
+        if(sum_unsigned /= mul_signed_expected_var) then
+            mul_signed_expected <= (others => 'X');
         else
-            mul_signed_valid <= '0';
+            mul_signed_expected <= mul_signed_expected_var;
         end if;
     end process;
-
 
 end architecture logic;

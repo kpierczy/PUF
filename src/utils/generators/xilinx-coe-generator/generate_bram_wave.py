@@ -23,6 +23,14 @@ from pathlib import Path
 # Path to the output file
 FILE_PATH = "out/bram_init.txt"
 
+# If true, an additional MIF file representation is generated
+MIF_FILE = True
+# Number of bits in MIF representation
+MIF_BITS = 16
+
+# If true, an additional file with human-readable representation of samples will be produced
+HUMAN_READABLE_FILE = True
+
 # Address offset of samples in BRAM
 ADDRESS_OFFSET = 0
 
@@ -37,9 +45,6 @@ SAMPLES_NUM = 64
 
 # Function's argument's range to be taken into account
 ARG_RANGE = (0, math.pi / 2)
-
-# If true, an additional file with human-readable representation of samples will be produced
-HUMAN_READABLE_FILE = True
 
 # ----------------------------------------------------------- Definitions ------------------------------------------------------------
 
@@ -58,6 +63,14 @@ if len(folder_name) != 0:
 
 # Open output file
 file = open(FILE_PATH, 'w')
+# Optionally, open MIF file
+mif_file = None
+if MIF_FILE:
+    mif_file_path = FILE_PATH
+    Path(mif_file_path).touch()
+    pre, ext = os.path.splitext(mif_file_path)
+    os.rename(mif_file_path, pre + '.mif')
+    mif_file = open(pre + '.mif', 'w')
 # Optionally, open auxiliary file
 aux_file = None
 if HUMAN_READABLE_FILE:
@@ -79,13 +92,21 @@ for i in range(0, SAMPLES_NUM):
     # Print sample's representation to the file
     file.write(f'{sample:X}')
 
-    # On all but last sample write new line character
-    if i != SAMPLES_NUM - 1:
-        file.write('\n')
+    # Optionally, write MIF representation to the auxiliriaty file
+    if MIF_FILE:
+        mif_file.write(f'{sample:0{MIF_BITS}b}')
 
     # Optionally, write human-readable representation to the auxiliriaty file
     if HUMAN_READABLE_FILE:
-        aux_file.write(f'{sample}\n')
+        aux_file.write(f'{sample}')
+
+    # On all but last sample write new line character
+    if i != SAMPLES_NUM - 1:
+        file.write('\n')
+        if MIF_FILE:
+            mif_file.write('\n')
+        if HUMAN_READABLE_FILE:
+            aux_file.write('\n')
 
 # Close output file
 file.close()
