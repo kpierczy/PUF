@@ -5,3 +5,5 @@ doc/out
 **/*.jou
 **/*.str
 **/*.Xil
+# Vivado project
+/project

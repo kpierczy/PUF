@@ -21,12 +21,6 @@ package multiplexer is
     -- Universal multiplexer's input
     type vectorsArray is array(natural range <>) of std_logic_vector;
 
-    -- Unsigned vectors' array
-    type unsignedVectorsArray is array(natural range <>) of Unsigned;
-    
-    -- Natural vectors' array
-    type naturalVectorsArray is array(natural range <>) of Natural;
-
 end package;
 
 -- ===================================================================================================================================

@@ -26,7 +26,7 @@ use work.edge.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity QuadrupleGenerator is
+entity QuadrupletGenerator is
     generic(
         -- Number of samples in a quarter
         SAMPLES_NUM : Positive;
@@ -35,9 +35,9 @@ entity QuadrupleGenerator is
         -- Width of the address port
         ADDR_WIDTH : Positive;
         -- Offset address of samples in the memory
-        SAMPLE_ADDR_OFFSET : Positive;
-        -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
-        BRAM_LATENCY : Natural := 0
+        SAMPLE_ADDR_OFFSET : Natural;
+        -- Latency (in cycles of @in clk) fof the BRAM read (1 for data collection on the next cycle after ena_out = '1')
+        BRAM_LATENCY : Positive := 1
     );
     port(
         -- Reset signal (asynchronous)
@@ -61,11 +61,11 @@ entity QuadrupleGenerator is
         -- Enable line
         ena_out : out Std_logic
     );
-end entity QuadrupleGenerator;
+end entity QuadrupletGenerator;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of QuadrupleGenerator is
+architecture logic of QuadrupletGenerator is
 
     -- Signal activated hight for one cycle when rising edge detected on @p in sample_clk
     signal new_sample : Std_logic;
@@ -143,7 +143,7 @@ begin
         -- Normal operation
         elsif(rising_edge(clk)) then
             
-            -- By default disable BRAM interface
+            -- Disable request for read by default
             ena_out <= '0';
 
             -- State machine
@@ -157,9 +157,9 @@ begin
                         -- Mark module as busy
                         busy <= '1';
                         -- Enable read from BRAM
-                        ena_out <= '1'
+                        ena_out <= '1';
                         -- Initialize latency counter
-                        latency_ticks <= BRAM_LATENCY;
+                        latency_ticks := BRAM_LATENCY;
                         -- Change state
                         state := WAIT_FOR_DATA_ST;
 
@@ -168,42 +168,37 @@ begin
                 -- Wait for data from BRAM
                 when WAIT_FOR_DATA_ST =>
 
+                    -- Decrement latency cycles' counter
+                    latency_ticks := latency_ticks - 1;
+
                     -- Check whether latency gap ended
                     if(latency_ticks = 0) then
 
                         -- Output appropriate sample
                         case quarter is
-                            when Q1|Q2 => (sample_out <=  Signed(data_in));
-                            when Q3|Q4 => (sample_out <= -Signed(data_in));
-                        end case
+                            when Q1|Q2 => sample_out <=  Signed(data_in);
+                            when Q3|Q4 => sample_out <= -Signed(data_in);
+                        end case;
 
                         -- Increment or decrement next read address
                         case quarter is
-                            when Q1|Q3 => (addr_buf <=  Std_logic_vector(Unsigned(addr_buf) + 1));
-                            when Q2|Q4 => (addr_buf <=  Std_logic_vector(Unsigned(addr_buf) - 1));
-                        end case
+                            when Q1|Q3 => addr_buf <=  Std_logic_vector(Unsigned(addr_buf) + 1);
+                            when Q2|Q4 => addr_buf <=  Std_logic_vector(Unsigned(addr_buf) - 1);
+                        end case;
 
                         -- Update address of the next sample
-                        if(quarter_samples = SAMPLES_NUM - 1) then
+                        if(quarter_samples = SAMPLES_NUM - 2) then
                             
                             -- First/last sample is not output twice
                             quarter_samples := 0;
 
                             -- Update quarter
                             case quarter is
-                                when Q1 => 
-                                    quarter := Q2;
-                                    addr_buf <=  Std_logic_vector(Unsigned(addr_buf) - 1;
-                                when Q2 =>
-                                    quarter := Q3;
-                                    addr_buf <=  Std_logic_vector(Unsigned(addr_buf) + 1;
-                                when Q3 => 
-                                    quarter := Q3;
-                                    addr_buf <=  Std_logic_vector(Unsigned(addr_buf) - 1;
-                                when Q4 =>
-                                    quarter := Q1;
-                                    addr_buf <=  Std_logic_vector(Unsigned(addr_buf) + 1;
-                            end case
+                                when Q1 => quarter := Q2;
+                                when Q2 => quarter := Q3;
+                                when Q3 => quarter := Q4;
+                                when Q4 => quarter := Q1;
+                            end case;
 
                         -- Else, increment number of samples from the actual quarter
                         else
@@ -215,13 +210,13 @@ begin
                         -- Change state
                         state := IDLE_ST;
 
-                    -- Else, decremen counter
-                    else
-                        latency_ticks <= latency_ticks - 1;
+
                     end if;
 
             end case;
-
+            
+        end if;
+        
     end process;
 
 end architecture;
