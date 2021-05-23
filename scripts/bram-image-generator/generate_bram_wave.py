@@ -21,7 +21,7 @@ from pathlib import Path
 # ---------------------------------------------------------- Configuration -----------------------------------------------------------
 
 # Path to the output file
-FILE_PATH = "config/quadruplet_generator_bram.txt"
+FILE_PATH = "data/quadruplet-tb-bram/quadruplet_generator_bram.txt"
 
 # If true, an additional MIF file representation is generated
 MIF_FILE = True

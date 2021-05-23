@@ -37,7 +37,7 @@ entity QuadrupleGeneratorTb is
         BRAM_LATENCY : Positive := 2;
 
         -- Path to the file containing data of the BRAM block (every line has to hold sample's value in decimal coding)
-        MIF_PATH : String := "/home/cris/Desktop/PUF/src/utils/generators/quadruplet-generator/config/quadruplet_generator_bram.mif";
+        MIF_PATH : String := "/home/cris/Desktop/PUF/data/quadruplet-tb-bram/quadruplet_generator_bram.mif";
 
         -- frequency of the wave signal
         WAVE_FREQ_HZ : Positive range 1 to SYS_CLK_HZ / (BRAM_LATENCY + 2) / (SAMPLES_NUM * 4 - 3) := 44_100

@@ -4,7 +4,7 @@ import configparser
 
 # Loading available config
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('scripts/bram-image-generator/config.ini')
 
 if 'USER' in config:
     allSetting = config['USER']
