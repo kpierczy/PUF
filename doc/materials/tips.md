@@ -1,0 +1,1 @@
+1. `set_property file_type {VHDL 2008} [get_files -filter {FILE_TYPE == VHDL}]` - Change all files in the project to VHDL 2008

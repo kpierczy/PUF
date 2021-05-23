@@ -4,6 +4,9 @@
     "latex-workshop.latex.outDir": "out",
 
     // Icons
+    "vsicons.associations.files": [
+        {"icon": "xml", "extensions": ["xci"], "format": "svg"}
+    ],
     "vsicons.associations.folders": [
         {"icon": "docs", "extensions": ["report"], "format": "svg"},
     ],

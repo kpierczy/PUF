@@ -1,7 +1,13 @@
-# Tutorials
-1. [VHDL design guide](https://vhdlguide.readthedocs.io/en/latest/index.html)
-2. [XADC configuration guide](https://www.unilim.fr/pages_perso/vahid/XADCinBasys3.html)
+# Description
 
-# Tricks & tips
+The project implements simple 4-module FPGA guitar multieffect based on the Digilent Cora Z10 board with Xilinx Zynq7010 Core. It contains:
+- saturation-based **distortion** module
+- variable-frequency **tremolo** module
+- variable-depth **delay** module
+- variable-depth & variable-frequency **chorus** module
+At the moment the processing core is interfaced via UART port for simplicity during development stage. In the future it is planned to add basic I2S bus support for connection to the external ADC/DAC modules.
 
-1. `set_property file_type {VHDL 2008} [get_files -filter {FILE_TYPE == VHDL}]` - Change all files in the project to VHDL 2008
+# Version informations
+
+- Vivado Design Suite: 2020.2
+- Python: 3.9

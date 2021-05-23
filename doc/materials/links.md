@@ -16,3 +16,8 @@
 9. [FPGA Design with Verilog](https://verilogguide.readthedocs.io/en/latest/)
 10. [FPGA Design with VHDL](https://vhdlguide.readthedocs.io/en/latest/index.html)
 11. [Sine wave generator](https://www.element14.com/community/groups/fpga-group/blog/2019/09/20/fpga-waves-2-simple-sinewave)
+12. [Building a custom yet functional AXI-lite slave](http://zipcpu.com/blog/2019/01/12/demoaxilite.html?_ga=2.15702838.1058788889.1621724864-1267795599.1616417139)
+13. [Zynq - PL Tutorial](https://ep.com.pl/kursy/tutoriale/11802-jak-uzywac-ukladow-soc-xilinx-zynq-7000-z-linuksem-proste-przyklady-1)
+14. [Zynq Blink](https://www.youtube.com/watch?v=-J7kvz2BwHw&ab_channel=electronutlabs)
+15. [VHDL design guide](https://vhdlguide.readthedocs.io/en/latest/index.html)
+16. [XADC configuration guide](https://www.unilim.fr/pages_perso/vahid/XADCinBasys3.html)

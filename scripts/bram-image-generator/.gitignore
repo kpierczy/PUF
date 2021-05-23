@@ -1,0 +1,2 @@
+# Exclude typical output directory for generated files
+/config

@@ -13,14 +13,14 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="60800001fs"></ZoomEndTime>
-      <Cursor1Time time="12000000fs"></Cursor1Time>
+      <ZoomEndTime time="24720000001fs"></ZoomEndTime>
+      <Cursor1Time time="1094360000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="262"></NameColumnWidth>
-      <ValueColumnWidth column_width="91"></ValueColumnWidth>
+      <ValueColumnWidth column_width="71"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="14" />
+   <WVObjectSize size="10" />
    <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/reset_n">
       <obj_property name="ElementShortName">reset_n</obj_property>
       <obj_property name="ObjectShortName">reset_n</obj_property>
@@ -37,10 +37,91 @@
       <obj_property name="ElementShortName">mux_sel_out[3:0]</obj_property>
       <obj_property name="ObjectShortName">mux_sel_out[3:0]</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/out_channels">
-      <obj_property name="ElementShortName">out_channels[0:2][11:0]</obj_property>
-      <obj_property name="ObjectShortName">out_channels[0:2][11:0]</obj_property>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out">
+      <obj_property name="ElementShortName">channels_out[0:8][11:0]</obj_property>
+      <obj_property name="ObjectShortName">channels_out[0:8][11:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[0]">
+         <obj_property name="ElementShortName">[0][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[0][11:0]</obj_property>
+         <obj_property name="CellHeight">100</obj_property>
+         <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+         <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+         <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+         <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+         <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+         <obj_property name="AnalogHorizLine">0.000000</obj_property>
+         <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[1]">
+         <obj_property name="ElementShortName">[1][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[1][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[2]">
+         <obj_property name="ElementShortName">[2][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[2][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[3]">
+         <obj_property name="ElementShortName">[3][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[3][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[4]">
+         <obj_property name="ElementShortName">[4][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[4][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[5]">
+         <obj_property name="ElementShortName">[5][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[5][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[6]">
+         <obj_property name="ElementShortName">[6][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[6][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[7]">
+         <obj_property name="ElementShortName">[7][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[7][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[8]">
+         <obj_property name="ElementShortName">[8][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[8][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[0]">
+         <obj_property name="ElementShortName">[0][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[0][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[1]">
+         <obj_property name="ElementShortName">[1][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[1][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[2]">
+         <obj_property name="ElementShortName">[2][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[2][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[3]">
+         <obj_property name="ElementShortName">[3][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[3][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[4]">
+         <obj_property name="ElementShortName">[4][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[4][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[5]">
+         <obj_property name="ElementShortName">[5][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[5][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[6]">
+         <obj_property name="ElementShortName">[6][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[6][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[7]">
+         <obj_property name="ElementShortName">[7][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[7][11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/channels_out[8]">
+         <obj_property name="ElementShortName">[8][11:0]</obj_property>
+         <obj_property name="ObjectShortName">[8][11:0]</obj_property>
+      </wvobject>
    </wvobject>
    <wvobject fp_name="divider595" type="divider">
       <obj_property name="label">XADC</obj_property>
@@ -71,32 +152,36 @@
          <obj_property name="ObjectShortName">xadc_busy_out</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_daddr_in">
-      <obj_property name="ElementShortName">xadc_daddr_in[3:0]</obj_property>
-      <obj_property name="ObjectShortName">xadc_daddr_in[3:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_do_out">
-      <obj_property name="ElementShortName">xadc_do_out[11:0]</obj_property>
-      <obj_property name="ObjectShortName">xadc_do_out[11:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/do_out_lines">
-      <obj_property name="ElementShortName">do_out_lines[15:0]</obj_property>
-      <obj_property name="ObjectShortName">do_out_lines[15:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_muxaddr_out">
-      <obj_property name="ElementShortName">xadc_muxaddr_out[3:0]</obj_property>
-      <obj_property name="ObjectShortName">xadc_muxaddr_out[3:0]</obj_property>
+   <wvobject type="group" fp_name="group251">
+      <obj_property name="label">Address</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_daddr_in">
+         <obj_property name="ElementShortName">xadc_daddr_in[3:0]</obj_property>
+         <obj_property name="ObjectShortName">xadc_daddr_in[3:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/analogSequenceReaderXadcInstance/daddr_in">
+         <obj_property name="ElementShortName">daddr_in[6:0]</obj_property>
+         <obj_property name="ObjectShortName">daddr_in[6:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
    </wvobject>
    <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/muxaddr_out_lines">
       <obj_property name="ElementShortName">muxaddr_out_lines[4:0]</obj_property>
       <obj_property name="ObjectShortName">muxaddr_out_lines[4:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/analogSequenceReaderXadcInstance/daddr_in">
-      <obj_property name="ElementShortName">daddr_in[6:0]</obj_property>
-      <obj_property name="ObjectShortName">daddr_in[6:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/analogSequenceReaderXadcInstance/channel_out">
-      <obj_property name="ElementShortName">channel_out[4:0]</obj_property>
-      <obj_property name="ObjectShortName">channel_out[4:0]</obj_property>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_do_out">
+      <obj_property name="ElementShortName">xadc_do_out[11:0]</obj_property>
+      <obj_property name="ObjectShortName">xadc_do_out[11:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+      <obj_property name="CellHeight">100</obj_property>
+      <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+      <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+      <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+      <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+      <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+      <obj_property name="AnalogHorizLine">0.000000</obj_property>
    </wvobject>
 </wave_config>

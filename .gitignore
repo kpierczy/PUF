@@ -1,11 +1,9 @@
 # Latex
 doc/out
-# Vivado
+# Viavo logs
+/log
+# Log files
 **/*.log
 **/*.jou
 **/*.str
 **/*.Xil
-# Vivado project
-/project
-# Viavo logs
-/log
