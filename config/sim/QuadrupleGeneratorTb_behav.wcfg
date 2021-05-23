@@ -12,15 +12,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="6360134fs"></ZoomStartTime>
-      <ZoomEndTime time="6599335fs"></ZoomEndTime>
-      <Cursor1Time time="6405000fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="240001fs"></ZoomEndTime>
+      <Cursor1Time time="1000000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="262"></NameColumnWidth>
-      <ValueColumnWidth column_width="111"></ValueColumnWidth>
+      <ValueColumnWidth column_width="107"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="12" />
+   <WVObjectSize size="13" />
    <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/reset_n">
       <obj_property name="ElementShortName">reset_n</obj_property>
       <obj_property name="ObjectShortName">reset_n</obj_property>
@@ -32,11 +32,6 @@
    <wvobject fp_name="divider22" type="divider">
       <obj_property name="label">Samples</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/bram">
-      <obj_property name="ElementShortName">bram[0:63][15:0]</obj_property>
-      <obj_property name="ObjectShortName">bram[0:63][15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/QuadrupleGeneratorTb/sample_out">
       <obj_property name="ElementShortName">sample_out[15:0]</obj_property>
@@ -68,25 +63,33 @@
       <obj_property name="label">Module</obj_property>
       <obj_property name="DisplayName">label</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/sample_clk">
-      <obj_property name="ElementShortName">sample_clk</obj_property>
-      <obj_property name="ObjectShortName">sample_clk</obj_property>
+   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/en_in">
+      <obj_property name="ElementShortName">en_in</obj_property>
+      <obj_property name="ObjectShortName">en_in</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/busy">
-      <obj_property name="ElementShortName">busy</obj_property>
-      <obj_property name="ObjectShortName">busy</obj_property>
+   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/busy_out">
+      <obj_property name="ElementShortName">busy_out</obj_property>
+      <obj_property name="ObjectShortName">busy_out</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/ena_out">
-      <obj_property name="ElementShortName">ena_out</obj_property>
-      <obj_property name="ObjectShortName">ena_out</obj_property>
+   <wvobject fp_name="divider38" type="divider">
+      <obj_property name="label">BRAM</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/addr_out">
-      <obj_property name="ElementShortName">addr_out[5:0]</obj_property>
-      <obj_property name="ObjectShortName">addr_out[5:0]</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/data_in">
-      <obj_property name="ElementShortName">data_in[15:0]</obj_property>
-      <obj_property name="ObjectShortName">data_in[15:0]</obj_property>
+   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/bram">
+      <obj_property name="ElementShortName">bram[0:64][15:0]</obj_property>
+      <obj_property name="ObjectShortName">bram[0:64][15:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/bram_data_out">
+      <obj_property name="ElementShortName">bram_data_out[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_data_out[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/QuadrupleGeneratorTb/bram_data_out">
+      <obj_property name="ElementShortName">bram_data_out[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_data_out[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/QuadrupleGeneratorTb/bram_en_in">
+      <obj_property name="ElementShortName">bram_en_in</obj_property>
+      <obj_property name="ObjectShortName">bram_en_in</obj_property>
    </wvobject>
 </wave_config>

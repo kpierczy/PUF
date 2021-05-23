@@ -21,7 +21,7 @@ from pathlib import Path
 # ---------------------------------------------------------- Configuration -----------------------------------------------------------
 
 # Path to the output file
-FILE_PATH = "out/bram_init.txt"
+FILE_PATH = "config/quadruplet_generator_bram.txt"
 
 # If true, an additional MIF file representation is generated
 MIF_FILE = True
@@ -34,25 +34,42 @@ HUMAN_READABLE_FILE = True
 # Address offset of samples in BRAM
 ADDRESS_OFFSET = 0
 
-# Type of wave (at now only 'sin')
+# Type of wave (at now only 'sin', 'saw')
 WAVE_TYPE = 'sin'
 
 # Coefficient that the sample is multiplied before being converted to the file representation
 GAIN = 2**15 - 1
 
 # Number of samples to be generated
-SAMPLES_NUM = 64
+SAMPLES_NUM = 65
 
-# Function's argument's range to be taken into account
+# Function's argument's range to be taken into account (both sides inclusively)
 ARG_RANGE = (0, math.pi / 2)
 
 # ----------------------------------------------------------- Definitions ------------------------------------------------------------
 
+def saw(arg):
+    # Compute function's region
+    region = np.math.floor(arg) % 4
+    # Compute arg's offset from the region start
+    offset = arg - np.math.floor(arg)
+    # Return value depending on region
+    if region == 0:
+        return offset
+    elif region == 1:
+        return 1 - offset
+    elif region == 2:
+        return - offset
+    elif region == 3:
+        return -1 + offset
+    
 def get_sample(fun : str, arg : float):
 
     # Select function
     if fun == 'sin':
-        return math.sin(arg)            
+        return math.sin(arg)
+    # elif fun == 'saw':
+    #     return saw(arg)
 
 # -------------------------------------------------------------- Logic ---------------------------------------------------------------
 
@@ -66,16 +83,13 @@ file = open(FILE_PATH, 'w')
 # Optionally, open MIF file
 mif_file = None
 if MIF_FILE:
-    mif_file_path = FILE_PATH
-    Path(mif_file_path).touch()
-    pre, ext = os.path.splitext(mif_file_path)
-    os.rename(mif_file_path, pre + '.mif')
-    mif_file = open(pre + '.mif', 'w')
+    file_name_no_ext = FILE_PATH.split('.')[0]
+    mif_file = open(file_name_no_ext  + '.mif', 'w')
 # Optionally, open auxiliary file
 aux_file = None
 if HUMAN_READABLE_FILE:
-    aux_file_path = os.path.join(os.path.dirname(FILE_PATH), 'aux_' + os.path.basename(FILE_PATH))
-    aux_file = open(aux_file_path, 'w')
+    file_name_no_ext = FILE_PATH.split('.')[0]
+    aux_file = open(file_name_no_ext  + '_hr.txt', 'w')
 
 # Generate list of desired sample's arguments
 args = np.linspace(ARG_RANGE[0], ARG_RANGE[1], SAMPLES_NUM)
@@ -110,6 +124,9 @@ for i in range(0, SAMPLES_NUM):
 
 # Close output file
 file.close()
+# Optionally, close auxiliary file
+if MIF_FILE:
+    mif_file.close()
 # Optionally, close auxiliary file
 if HUMAN_READABLE_FILE:
     aux_file.close()

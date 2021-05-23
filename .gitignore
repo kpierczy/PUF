@@ -7,3 +7,5 @@ doc/out
 **/*.Xil
 # Vivado project
 /project
+# Viavo logs
+/log

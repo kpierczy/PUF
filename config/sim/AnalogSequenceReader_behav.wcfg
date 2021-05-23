@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="AnalogSequenceReaderTb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="AnalogSequenceReaderTb" />
+            <top_module name="sim" />
+            <top_module name="xadc" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="60800001fs"></ZoomEndTime>
+      <Cursor1Time time="12000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="262"></NameColumnWidth>
+      <ValueColumnWidth column_width="91"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="14" />
+   <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/reset_n">
+      <obj_property name="ElementShortName">reset_n</obj_property>
+      <obj_property name="ObjectShortName">reset_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider598" type="divider">
+      <obj_property name="label">Module</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/mux_sel_out">
+      <obj_property name="ElementShortName">mux_sel_out[3:0]</obj_property>
+      <obj_property name="ObjectShortName">mux_sel_out[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/out_channels">
+      <obj_property name="ElementShortName">out_channels[0:2][11:0]</obj_property>
+      <obj_property name="ObjectShortName">out_channels[0:2][11:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="divider595" type="divider">
+      <obj_property name="label">XADC</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group599">
+      <obj_property name="label">Flags</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_convst_in">
+         <obj_property name="ElementShortName">xadc_convst_in</obj_property>
+         <obj_property name="ObjectShortName">xadc_convst_in</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_eoc_out">
+         <obj_property name="ElementShortName">xadc_eoc_out</obj_property>
+         <obj_property name="ObjectShortName">xadc_eoc_out</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_den_in">
+         <obj_property name="ElementShortName">xadc_den_in</obj_property>
+         <obj_property name="ObjectShortName">xadc_den_in</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_drdy_out">
+         <obj_property name="ElementShortName">xadc_drdy_out</obj_property>
+         <obj_property name="ObjectShortName">xadc_drdy_out</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_busy_out">
+         <obj_property name="ElementShortName">xadc_busy_out</obj_property>
+         <obj_property name="ObjectShortName">xadc_busy_out</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_daddr_in">
+      <obj_property name="ElementShortName">xadc_daddr_in[3:0]</obj_property>
+      <obj_property name="ObjectShortName">xadc_daddr_in[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_do_out">
+      <obj_property name="ElementShortName">xadc_do_out[11:0]</obj_property>
+      <obj_property name="ObjectShortName">xadc_do_out[11:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/do_out_lines">
+      <obj_property name="ElementShortName">do_out_lines[15:0]</obj_property>
+      <obj_property name="ObjectShortName">do_out_lines[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/xadc_muxaddr_out">
+      <obj_property name="ElementShortName">xadc_muxaddr_out[3:0]</obj_property>
+      <obj_property name="ObjectShortName">xadc_muxaddr_out[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/muxaddr_out_lines">
+      <obj_property name="ElementShortName">muxaddr_out_lines[4:0]</obj_property>
+      <obj_property name="ObjectShortName">muxaddr_out_lines[4:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/analogSequenceReaderXadcInstance/daddr_in">
+      <obj_property name="ElementShortName">daddr_in[6:0]</obj_property>
+      <obj_property name="ObjectShortName">daddr_in[6:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/AnalogSequenceReaderTb/analogSequenceReaderInstance/analogSequenceReaderXadcInterfaceInstance/analogSequenceReaderXadcInstance/channel_out">
+      <obj_property name="ElementShortName">channel_out[4:0]</obj_property>
+      <obj_property name="ObjectShortName">channel_out[4:0]</obj_property>
+   </wvobject>
+</wave_config>

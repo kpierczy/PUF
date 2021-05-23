@@ -4,7 +4,7 @@
 -- @ Modified time: 2021-05-19 15:50:07
 -- @ Description: 
 --    
---    Gain module with dynamically parametrized saturation level
+--    Clipping effect module with dynamically parametrized saturation level
 --    
 -- ===================================================================================================================================
 
@@ -20,32 +20,39 @@ entity ClippingEffect is
 
     generic(
         -- Width of the input sample
-        SAMPLE_WIDTH : Positive range 1 to 32;
+        SAMPLE_WIDTH : Positive range 2 to 32;
         -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive range 1 to 31;
+        GAIN_WIDTH : Positive range 2 to 31;
         -- Index of the 2's power that the multiplication's result is divided by before saturation
         TWO_POW_DIV : Natural range 0 to 31
     );
     port(
+
+        -- ==================== Effects' common interface =================== --
+
         -- Reset signal (asynchronous)
         reset_n : in Std_logic;
         -- System clock
         clk : in Std_logic;
 
+        -- Enable signal (when module's disabled, samples are not modified)
+        enable_in : in Std_logic;
         -- `New input sample` signal (rising-edge-active)
-        valid_in : in std_logic;
+        valid_in : in Std_logic;
         -- `Output sample ready` signal (rising-edge-active)
-        valid_out : out std_logic;
+        valid_out : out Std_logic;
 
         -- Input sample
         sample_in : in Signed(SAMPLE_WIDTH - 1 downto 0);
+        -- Gained sample
+        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
+
+        -- =================== Effect's-specific interface ================== --
+
         -- Gain input
         gain_in : in Unsigned(GAIN_WIDTH - 1 downto 0);
         -- Saturation level (for absolute value of the signal)
-        saturation_in : in Unsigned(SAMPLE_WIDTH - 2 downto 0);
-
-        -- Gained sample
-        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0)
+        saturation_in : in Unsigned(SAMPLE_WIDTH - 2 downto 0)
     );
 
 end entity ClippingEffect;
@@ -59,7 +66,7 @@ architecture logic of ClippingEffect is
 
     -- Input sample buffer
     signal sample_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
-    -- Gain value buf
+    -- Gain value buffer
     signal gain_buf : Signed(GAIN_WIDTH downto 0);
     -- Internal result of multiplying
     signal result : Signed(SAMPLE_WIDTH + GAIN_WIDTH - TWO_POW_DIV downto 0);
@@ -143,47 +150,72 @@ begin
             -- Deactivate `sample ready` output by defau
             valid_out <= '0';
 
-            -- State machine
-            case state is 
+            -- When module's enabled
+            if(enable_in = '1') then
 
-                -- Waiting for new sample
-                when IDLE_ST =>
+                -- State machine
+                case state is 
 
-                    -- Check fi new sample arrived
-                    if(new_sample = '1') then
+                    -- Waiting for new sample
+                    when IDLE_ST =>
 
-                        -- Fetch sample
-                        sample_buf <= sample_in;
-                        -- Fetch gain value
-                        gain_buf <= Signed(resize(gain_in, GAIN_WIDTH + 1));
-                        -- Fetch saturation values
-                        high_limit :=  Signed(resize(saturation_in, SAMPLE_WIDTH));
-                        low_limit  := -Signed(resize(saturation_in, SAMPLE_WIDTH));
+                        -- Check fi new sample arrived
+                        if(new_sample = '1') then
+
+                            -- Fetch sample
+                            sample_buf <= sample_in;
+                            -- Fetch gain value
+                            gain_buf <= Signed(resize(gain_in, GAIN_WIDTH + 1));
+                            -- Fetch saturation values
+                            high_limit :=  Signed(resize(saturation_in, SAMPLE_WIDTH));
+                            low_limit  := -Signed(resize(saturation_in, SAMPLE_WIDTH));
+                            -- Change state
+                            state := COMPUTE_ST;
+
+                        end if;
+
+                    -- Outputing computed sample
+                    when COMPUTE_ST =>
+
+                        -- Saturate from top
+                        if(result > resize(high_limit, result'length)) then
+                            sample_out <= high_limit;
+                        -- Saturate from bottom
+                        elsif(result < resize(low_limit, result'length)) then
+                            sample_out <= low_limit;
+                        -- Output without saturation
+                        else
+                            sample_out <= resize(result, SAMPLE_WIDTH);
+                        end if;
+
+                        -- Signal new sample on output
+                        valid_out <= '1';
                         -- Change state
-                        state := COMPUTE_ST;
+                        state := IDLE_ST;
 
-                    end if;
+                end case;
 
-                -- Outputing computed sample
-                when COMPUTE_ST =>
+            -- When module's disabled
+            else 
+                
+                -- Check if new sample arrived or module's was turned off during processing
+                if(new_sample = '1' or state /= IDLE_ST) then
 
-                    -- Saturate from top
-                    if(result > resize(high_limit, result'length)) then
-                        sample_out <= high_limit;
-                    -- Saturate from bottom
-                    elsif(result < resize(low_limit, result'length)) then
-                        sample_out <= low_limit;
-                    -- Output without saturation
+                    -- Output unprocessed input sample
+                    if(state /= IDLE_ST) then
+                        sample_out <= sample_buf;
                     else
-                        sample_out <= resize(result, SAMPLE_WIDTH);
+                        sample_out <= sample_in;
                     end if;
 
-                    -- Signal new sample on output
+                    -- Signal new sample on the output
                     valid_out <= '1';
-                    -- Change state
+                    -- Reset state
                     state := IDLE_ST;
 
-            end case;
+                end if;
+
+            end if;
 
         end if;
 

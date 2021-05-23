@@ -4,25 +4,29 @@
 -- @ Modified time: 2021-05-20 15:40:45
 -- @ Description: 
 --    
---    `QuadrupleGenerator` is a module generating periodic wave based on the data hold in the connected BRAM block. Generator ussumes
---    that a desired wave can be created using symethry of samples in the first quarter (Q1[t]) as described (N is number of samples
---    in the quarter):
+--    `QuadrupleGenerator` is a module generating periodic wave based on the data hold in the connected BRAM block. Generator assumes
+--    that a desired wave can be created using symetry of samples in the first quarter (Q1[t]) as described (N is number of samples
+--    in the BRAM; every quarter is covered by N - 1 samples):
 --
---      - Q2[t] =   Q1[N - t - 1]
---      - Q3[t] = - Q1[t]
---      - Q4[t] = - Q1[N - t - 1]
+--      - Q1[t] =   BRAM[t]    , t in <0; N)
+--      - Q2[t] =   BRAM[N - t], t in <N; 2N - 1)
+--      - Q3[t] = - BRAM[t]    , t in <2N; 3N - 1)
+--      - Q4[t] = - BRAM[N - t], t in <3N; 3N - 1)
 --    
---    This is true for basic periodic function as sine wave, saw wave or square wave. Module is accommodated to function along with
---    native BRAM interface.
+--    This is true for basic periodic function as sine wave, triangle wave or square wave. Module is accommodated to function along 
+--    with native BRAM interface. Latency of the BRAM read operation can be set via generics.
 --
--- @ Note: Last sample in the memory is assumed to be local maximum of the wave. Samples are treated as U2-coded signed values.
+-- @ Note: Samples are assumed to be U2-coded signed values
+-- @ Note: Last sample in the memory is assumed to be local maximum of the wave. As so number of samples per wave's period is 4N - 3.
+--     For example to generate sine wave containing 1024 evenly spaced samples per period one need to provide BRAM block containing
+--     257 (evenly spaced) samples taken from range <0;pi/2>.
+-- @ Note: Samples are assumed to be allocated from the address 0x0 in the BRAM.
+-- @ Note: Latency of the module is one @in clk's cycle longer than BRAM's latency.
 -- ===================================================================================================================================
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-library work;
-use work.edge.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
@@ -34,10 +38,8 @@ entity QuadrupletGenerator is
         SAMPLE_WIDTH : Positive;
         -- Width of the address port
         ADDR_WIDTH : Positive;
-        -- Offset address of samples in the memory
-        SAMPLE_ADDR_OFFSET : Natural;
-        -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
-        BRAM_LATENCY : Positive := 1
+        -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
+        BRAM_LATENCY : Positive
     );
     port(
         -- Reset signal (asynchronous)
@@ -45,21 +47,21 @@ entity QuadrupletGenerator is
         -- System clock
         clk : in Std_logic;
 
-        -- Next clk's cycle after `sample_clk`'s rising edge a new sample is read from memory
-        sample_clk : in Std_logic;
+        -- Signal starting generation of the next sample (active high)
+        en_in : in Std_logic;
         -- Data lines
         sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
         -- Line is pulled to '1' when module is processing a sample
-        busy : out Std_logic;
+        busy_out : out Std_logic;
 
         -- ================= BRAM Interface ================= --
 
         -- Address lines
-        addr_out : out Std_logic_vector(ADDR_WIDTH - 1 downto 0);
+        bram_addr_out : out Std_logic_vector(ADDR_WIDTH - 1 downto 0);
         -- Data lines
-        data_in : in Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+        bram_data_in : in Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
         -- Enable line
-        ena_out : out Std_logic
+        bram_en_out : out Std_logic
     );
 end entity QuadrupletGenerator;
 
@@ -67,42 +69,23 @@ end entity QuadrupletGenerator;
 
 architecture logic of QuadrupletGenerator is
 
-    -- Signal activated hight for one cycle when rising edge detected on @p in sample_clk
-    signal new_sample : Std_logic;
     -- Adress port buffer
-    signal addr_buf : Std_logic_vector(ADDR_WIDTH - 1 downto 0);
+    signal bram_addr_buf : Std_logic_vector(ADDR_WIDTH - 1 downto 0);
 
 begin
 
     -- Assert address port is wide enought to be able to address all samples
-    assert (2**ADDR_WIDTH - SAMPLE_ADDR_OFFSET >= SAMPLES_NUM)
+    assert (2**ADDR_WIDTH >= SAMPLES_NUM)
         report 
             "[QuadrupleGenerator] Adress port too narrow to address all samples!"
     severity error;
-
-    -- =================================================================================
-    -- Internal components
-    -- =================================================================================
-
-    -- `sample_clk` edge detector
-    edgeDetectotInstance : entity work.EdgeDetectorSync(logic)
-    generic map(
-        OUTPUT_ACTIVE => '1',
-        EDGE_DETECTED => RISING
-    )
-    port map(
-        reset_n   => reset_n,
-        clk       => clk,
-        sig       => sample_clk,
-        detection => new_sample
-    );
 
     -- =================================================================================
     -- Module's logic
     -- =================================================================================
 
     -- Connect output buffer of address port
-    addr_out <= addr_buf;
+    bram_addr_out <= bram_addr_buf;
 
     -- State machine
     process(reset_n, clk) is
@@ -129,9 +112,9 @@ begin
 
             -- Keep outputs low
             sample_out <= (others => '0');
-            busy <= '0';
-            addr_buf <= Std_logic_vector(to_unsigned(SAMPLE_ADDR_OFFSET, ADDR_WIDTH));
-            ena_out <= '0';
+            busy_out <= '0';
+            bram_addr_buf <= Std_logic_vector(to_unsigned(0, ADDR_WIDTH));
+            bram_en_out <= '0';
             -- Reset internal buffers
             latency_ticks := 0;
             -- Reset quarter
@@ -149,12 +132,12 @@ begin
                 -- Waiting for rising edge on the `sample_clk` input
                 when IDLE_ST =>
 
-                    if(new_sample = '1') then
+                    if(en_in = '1') then
 
-                        -- Mark module as busy
-                        busy <= '1';
+                        -- Mark module as busy_out
+                        busy_out <= '1';
                         -- Enable read from BRAM
-                        ena_out <= '1';
+                        bram_en_out <= '1';
                         -- Initialize latency counter
                         latency_ticks := BRAM_LATENCY;
                         -- Change state
@@ -170,14 +153,14 @@ begin
 
                         -- Output appropriate sample
                         case quarter is
-                            when Q1|Q2 => sample_out <=  Signed(data_in);
-                            when Q3|Q4 => sample_out <= -Signed(data_in);
+                            when Q1|Q2 => sample_out <=  Signed(bram_data_in);
+                            when Q3|Q4 => sample_out <= -Signed(bram_data_in);
                         end case;
 
                         -- Increment or decrement next read address
                         case quarter is
-                            when Q1|Q3 => addr_buf <=  Std_logic_vector(Unsigned(addr_buf) + 1);
-                            when Q2|Q4 => addr_buf <=  Std_logic_vector(Unsigned(addr_buf) - 1);
+                            when Q1|Q3 => bram_addr_buf <=  Std_logic_vector(Unsigned(bram_addr_buf) + 1);
+                            when Q2|Q4 => bram_addr_buf <=  Std_logic_vector(Unsigned(bram_addr_buf) - 1);
                         end case;
 
                         -- Update address of the next sample
@@ -200,9 +183,9 @@ begin
                         end if;
             
                         -- Disable request for read
-                        ena_out <= '0';
+                        bram_en_out <= '0';
                         -- Mark module as free
-                        busy <= '0';
+                        busy_out <= '0';
                         -- Change state
                         state := IDLE_ST;
 

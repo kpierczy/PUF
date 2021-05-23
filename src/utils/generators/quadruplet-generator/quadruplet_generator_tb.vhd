@@ -6,6 +6,7 @@
 --    
 --    Quadruplet generator's testbench
 --    
+-- @ Note: `QuadrupletGeneratorTbBram` BRAM component has to be provided in the project to run this simulation
 -- ===================================================================================================================================
 
 library std;
@@ -27,21 +28,19 @@ entity QuadrupleGeneratorTb is
         SYS_RESET_TICKS : Positive := 10;
 
         -- Number of samples in a quarter
-        SAMPLES_NUM : Positive := 64;
+        SAMPLES_NUM : Positive := 65;
         -- Width of the single sample
         SAMPLE_WIDTH : Positive := 16;
         -- Width of the address port
-        ADDR_WIDTH : Positive := 6;
-        -- Offset address of samples in the memory
-        SAMPLE_ADDR_OFFSET : Natural := 0;
+        ADDR_WIDTH : Positive := 7;
         -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
         BRAM_LATENCY : Positive := 2;
 
         -- Path to the file containing data of the BRAM block (every line has to hold sample's value in decimal coding)
-        MIF_PATH : String := "/home/cris/Desktop/PUF/src/utils/generators/xilinx-coe-generator/out/aux_bram_init.mif";
+        MIF_PATH : String := "/home/cris/Desktop/PUF/src/utils/generators/quadruplet-generator/config/quadruplet_generator_bram.mif";
 
-        -- Frequency of `new sample` requests (rounded down to natural fraction of SYS_CLK_HZ)
-        NEW_SAMPLE_HZ : Positive range 1 to SYS_CLK_HZ / (BRAM_LATENCY + 2) := 44_100 * (SAMPLES_NUM * 4 - 3)
+        -- frequency of the wave signal
+        WAVE_FREQ_HZ : Positive range 1 to SYS_CLK_HZ / (BRAM_LATENCY + 2) / (SAMPLES_NUM * 4 - 3) := 44_100
     );
 end entity QuadrupleGeneratorTb;
 
@@ -50,8 +49,12 @@ end entity QuadrupleGeneratorTb;
 architecture logic of QuadrupleGeneratorTb is
 
     -- Peiord of the system clock
-    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
-    
+    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;  
+    -- Generator's latency
+    constant GENERATOR_LATENCY : Positive := BRAM_LATENCY + 2;  
+    -- Input samples' frequency (rounded down to natural fraction of SYS_CLK_HZ)
+    constant SAMPLE_FREQ_HZ : Positive range 1 to SYS_CLK_HZ / (BRAM_LATENCY + 2) := WAVE_FREQ_HZ * (SAMPLES_NUM * 4 - 3);
+
     -- Reset signal
     signal reset_n : Std_logic := '0';
     -- System clock
@@ -60,11 +63,11 @@ architecture logic of QuadrupleGeneratorTb is
     -- ====================== Module's interface ====================== --
 
     -- Next clk's cycle after `sample_clk`'s rising edge a new sample is read from memory
-    signal sample_clk : Std_logic;
+    signal en_in : Std_logic;
     -- Data lines
     signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
     -- Line is pulled to '1' when module is processing a sample
-    signal busy : Std_logic;
+    signal busy_out : Std_logic;
 
     -- ================= BRAM Interface ================= --
 
@@ -75,18 +78,18 @@ architecture logic of QuadrupleGeneratorTb is
         rsta : in Std_logic;
         ena : in Std_logic;
         wea : in Std_logic_vector(0 downto 0);
-        addra : in Std_logic_vector(5 downto 0);
-        dina : in Std_logic_vector(15 downto 0);
-        douta : out Std_logic_vector(15 downto 0)
+        addra : in Std_logic_vector(ADDR_WIDTH - 1 downto 0);
+        dina : in Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+        douta : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
     );
     end component;
 
     -- Address lines
-    signal addr_out : Std_logic_vector(ADDR_WIDTH - 1 downto 0);
+    signal bram_addr_in : Std_logic_vector(ADDR_WIDTH - 1 downto 0);
     -- Data lines
-    signal data_in : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+    signal bram_data_out : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
     -- Enable line
-    signal ena_out : Std_logic;
+    signal bram_en_in : Std_logic;
 
     -- ===================== Verification signals ===================== --
 
@@ -135,24 +138,23 @@ begin
     -- Module's instance
     -- =================================================================================
 
-    -- Instance of the clipping effect's module
-    quadrupletGeneratorInstance : entity work.QuadrupletGenerator
+    -- Instance of the quadruplet effect's module
+    quadrupletGeneratorInstance : entity work.QuadrupletGenerator(logic)
     generic map (
         SAMPLES_NUM        => SAMPLES_NUM,
         SAMPLE_WIDTH       => SAMPLE_WIDTH,
         ADDR_WIDTH         => ADDR_WIDTH,
-        SAMPLE_ADDR_OFFSET => SAMPLE_ADDR_OFFSET,
         BRAM_LATENCY       => BRAM_LATENCY
     )
     port map (
-        reset_n    => reset_n,
-        clk        => clk,
-        sample_clk => sample_clk,
-        sample_out => sample_out,
-        busy       => busy,
-        addr_out   => addr_out,
-        data_in    => data_in,
-        ena_out    => ena_out
+        reset_n       => reset_n,
+        clk           => clk,
+        en_in         => en_in,
+        sample_out    => sample_out,
+        busy_out      => busy_out,
+        bram_addr_out => bram_addr_in,
+        bram_data_in  => bram_data_out,
+        bram_en_out   => bram_en_in
     );
 
     -- BRAM instance
@@ -160,23 +162,23 @@ begin
     PORT MAP (
         clka => clk,
         rsta => not(reset_n),
-        ena => ena_out,
+        ena => bram_en_in,
         wea => (others => '0'),
-        addra => addr_out,
+        addra => bram_addr_in,
         dina => (others => '0'),
-        douta => data_in
+        douta => bram_data_out
     );
 
     -- =================================================================================
     -- Procedure's validation
     -- =================================================================================
 
-    -- Saples generating process
+    -- Samples generating process
     process is
     begin
 
         -- Keep module inactive
-        sample_clk <= '0';
+        en_in <= '0';
 
         -- Wait for end of reset
         wait until reset_n = '1';
@@ -187,17 +189,17 @@ begin
         loop
 
             -- Pull trigger high ...
-            sample_clk <= '1';
-            wait for CLK_PERIOD;
+            en_in <= '1';
+            wait until rising_edge(clk);
             -- ... and back low after one cycle
-            sample_clk <= '0';
+            en_in <= '0';
             -- Wait for end of module's work
-            wait until falling_edge(busy);
+            wait until falling_edge(busy_out);
             -- Wait until next sample (take into account module's delay)
-            if (1 sec / NEW_SAMPLE_HZ - (BRAM_LATENCY + 2) * CLK_PERIOD > 0 sec) then
-                -- Wait one cycle less in case SYS_CLK_HZ is not multiple of NEW_SAMPLE_HZ
-                if (1 sec / NEW_SAMPLE_HZ - (BRAM_LATENCY + 3) * CLK_PERIOD > 0 sec) then
-                    wait for 1 sec / NEW_SAMPLE_HZ - (BRAM_LATENCY + 3) * CLK_PERIOD;
+            if (1 sec / SAMPLE_FREQ_HZ - GENERATOR_LATENCY * CLK_PERIOD > 0 sec) then
+                -- Wait one cycle less in case SYS_CLK_HZ is not multiple of SAMPLE_FREQ_HZ
+                if (1 sec / SAMPLE_FREQ_HZ - (GENERATOR_LATENCY + 1) * CLK_PERIOD > 0 sec) then
+                    wait for 1 sec / SAMPLE_FREQ_HZ - (BRAM_LATENCY + 3) * CLK_PERIOD;
                 end if;
                 -- Start samples generation on rising edge
                 wait until rising_edge(clk);
@@ -236,7 +238,7 @@ begin
         loop
 
             -- Wait for new sample on the output
-            wait until falling_edge(busy);
+            wait until falling_edge(busy_out);
             -- Wait until next falling edge of the clk to let `sample_out` signal stabilize
             wait until falling_edge(clk);
             -- Compare expected output with actual

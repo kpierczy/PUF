@@ -4,10 +4,12 @@
 -- @ Modified time: 2021-05-19 18:40:34
 -- @ Description: 
 --    
---    Clipping effect's testbench 
+--    Tremolo effect's testbench 
 --    
 -- ===================================================================================================================================
 
+library std;
+use std.textio.all;
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -17,49 +19,56 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity ClippingEffectTb is
+entity TremoloEffect is
     generic(
         -- System clock frequency
         SYS_CLK_HZ : Positive := 200_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
+        -- ================ Module's parameters ================ --
+
         -- Width of the input sample
-        SAMPLE_WIDTH : Positive range 1 to 32 := 16;
-        -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive range 1 to 31 := 12;
-        -- Index of the 2's power that the multiplication's result is divided by before saturation
-        TWO_POW_DIV : Natural range 0 to 31 := 11;
-        
-        -- Frequency of the input wave
-        SAMPLE_FREQU_HZ : Positive := 44_100;
-        -- Amplitude of the input wave in normalized range (0; 1>
-        SAMPLE_AMPLITUDE : Real := 0.5;
-        
-        -- Frequency of the input wave
-        GAIN_FREQU_HZ : Positive := 44_100;
-        -- Phase shift of the gain wave with respsect to sample wave
-        GAIN_PHAZE_SHIFT : Real := 0.0;
-        -- Amplitude of the gain input wave in normalized range (0; 1>
-        GAIN_AMPLITUDE : Real := 0.75;
+        SAMPLE_WIDTH : Positive range 2 to 32;
+        -- Width of the modulating sample
+        MODULATION_SAMPLE_WIDTH : Positive range 2 to 32;
+        -- Width of the `modulation_freq` parameter input
+        MODULATION_FREQ_WIDTH : Positive range 1 to 32;
+        -- Number of samples in a single period of the modulation wave
+        MODULATION_SAMPLES_NUM : Positive;
 
-        -- Amplitudes of clips in normalized range (0; 1>
-        SATURATION_AMPLITUDE : Real := 0.75;
-        -- Time between subsequent changes in saturation value
-        SATURATION_TOGGLE_HZ : Positive := 22_050;
+        -- Input wave's frequency
+        SAMPLES_FREQ_HZ : Positive := 44_100;
 
-        -- Time between end of conversion and start of the next conversion
-        CONVERSIONS_GAP : Time := 5 ns
+        -- ============== Generator's parameters =============== --
+        
+        -- Width of the address port
+        ADDR_WIDTH : Positive := 6;
+        -- Offset address of samples in the memory
+        SAMPLE_ADDR_OFFSET : Natural := 0;
+
+        -- ================ BRAM's parameters ================== --
+
+        -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
+        BRAM_LATENCY : Positive := 2;
+
+        -- ============== Auxiliary parameters ================= --
+
+        -- Path to the file containing data of the BRAM block (every line has to hold sample's value in decimal coding)
+        MIF_PATH : String := "/home/cris/Desktop/PUF/src/utils/generators/xilinx-coe-generator/out/aux_bram_init.mif"
+
     );
-end entity ClippingEffectTb;
+end entity TremoloEffect;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of ClippingEffectTb is
+architecture logic of TremoloEffect is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
-    
+    -- Sampled signal's amplitude
+    constant SAMPLES_AMPLITUDE : Real := 2**(SAMPLE_WIDTH - 1) - 1;
+
     -- Reset signal
     signal reset_n : Std_logic := '0';
     -- System clock
@@ -67,36 +76,74 @@ architecture logic of ClippingEffectTb is
 
     -- ====================== Module's interface ====================== --
 
-    -- Module's enable signal
-    signal enable_in : Std_logic := '1';
-    -- Input and output samples
-    signal sample_in, sample_out :  Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-    -- Signal for new sample on input (rising-edge-active)
-    signal valid_in : Std_logic := '0';
-    -- Signal for new sample on output (rising-edge-active)
+        -- Enable signal (when module's disabled, samples are not modified)
+    signal enable_in : Std_logic;
+        -- `New input sample` signal (rising-edge-active)
+    signal valid_in : Std_logic;
+        -- `Output sample ready` signal (rising-edge-active)
     signal valid_out : Std_logic;
-    -- Module's gain
-    signal gain_in : Unsigned(GAIN_WIDTH - 1 downto 0);
-    -- Module's saturation
-    signal saturation_in : Unsigned(SAMPLE_WIDTH - 2 downto 0);
+
+        -- Input sample
+    signal sample_in : Signed(SAMPLE_WIDTH - 1 downto 0);
+        -- Gained sample
+    signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
+
+    -- Busy output (active high)
+    signal module_busy : Std_logic;
+    -- Number of input samples per modulation wave's sample (minus 1)
+    signal samples_per_modulation_sample : Unsigned(MODULATION_FREQ_WIDTH - 1 downto 0);
+
+    -- ================ Quadruplet generator's signals ================ --
+
+    -- Generator's sample output
+    signal modulation_sample_out : Unsigned(MODULATION_SAMPLE_WIDTH - 1 downto 0);
+    -- Generator's `busy` signal (active hight)
+    signal modulation_busy_out : Std_logic;
+    -- Generator's input initializing generation of the next sample (rising-edge-active)
+    signal modulation_next_sample_in : Std_logic;
+
+    -- ======================== BRAM Interface ======================== --
+
+    -- Address lines
+    signal addr_out : Std_logic_vector(ADDR_WIDTH - 1 downto 0);
+    -- Data lines
+    signal data_in : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+    -- Enable line
+    signal ena_out : Std_logic;
 
     -- ===================== Verification signals ===================== --
 
-    -- Desired value of gain and sample multiplication  (with 2-power division)
-    signal mul_out_expected : Signed(SAMPLE_WIDTH + GAIN_WIDTH - TWO_POW_DIV downto 0) := (others => '0');
-    -- Desired value of sample 
-    signal sample_out_expected : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-    -- `Valid output` flag tracking whether module works fine
-    signal sample_out_valid : Std_logic := '0';
+    -- Type to load BRAM image
+    type RamImage is array (0 to MODULATION_SAMPLES_NUM - 1) of Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
 
-    -- ====================== Auxiliary signals ====================== --
+    -- Desired value of sample
+    signal sample_expected : Signed(SAMPLE_WIDTH - 1 downto 0);
+
+    -- ======================== Helper content ======================== --
 
     -- Real-converted input signal
     signal sample_in_tmp : Real;
-    -- Real-converted gain signal
-    signal gain_in_tmp : Real;
-    -- Real-converted saturation signal
-    signal saturation_in_tmp : Real;
+    
+    -- Initializes BRAM image from binary MIF file
+    impure function init_ram_bin(path : String) return RamImage is
+        -- MIF file to be read
+        file text_file : text open read_mode is path;
+        -- Foile's line
+        variable text_line : line;
+        -- Ram conent
+        variable ram_content : RamImage;
+    begin
+        -- Read lines and convert to numeric values
+        for i in 0 to MODULATION_SAMPLES_NUM - 1 loop
+            readline(text_file, text_line);
+            bread(text_line, ram_content(i));
+        end loop;
+        -- Return BRAM content
+        return ram_content;
+    end function;
+
+    -- BRAM content
+    signal bram : RamImage := init_ram_bin(MIF_PATH);
 
 begin
 
@@ -119,39 +166,13 @@ begin
     sample_in <= to_signed(integer(sample_in_tmp), SAMPLE_WIDTH);
     generate_sin(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
+        FREQUENCY_HZ => SAMPLES_FREQ_HZ,
         PHASE_SHIFT  => 0.0,
-        AMPLITUDE    => Real(SAMPLE_AMPLITUDE) * (2**(SAMPLE_WIDTH - 1) - 1),
+        AMPLITUDE    => SAMPLES_AMPLITUDE,
         OFFSET       => 0.0,
         reset_n      => reset_n,
         clk          => clk,
         wave         => sample_in_tmp
-    );
-
-
-    -- Generate gain signal
-    gain_in <= to_unsigned(Natural(gain_in_tmp), GAIN_WIDTH);
-    generate_sin(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
-        PHASE_SHIFT  => GAIN_PHAZE_SHIFT,
-        AMPLITUDE    => Real(GAIN_AMPLITUDE) * (2**(GAIN_WIDTH - 1) - 1),
-        OFFSET       => Real(GAIN_AMPLITUDE) * (2**(GAIN_WIDTH - 1) - 1),
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => gain_in_tmp
-    );
-
-    -- Generate saturation signal
-    saturation_in <= to_unsigned(Natural(saturation_in_tmp), SAMPLE_WIDTH - 1);
-    generate_random_stairs(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
-        MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(SATURATION_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1))),
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => saturation_in_tmp
     );
 
     -- `valid_in` generator
@@ -177,10 +198,7 @@ begin
             valid_in <= '0';
 
             -- Wait for the end of conversion
-            wait until falling_edge(valid_out);
-
-            -- Wait a gap time before triggering the next cycle
-            wait for CONVERSIONS_GAP;
+            wait until falling_edge(module_busy);
 
         end loop;
     end process;
@@ -189,22 +207,59 @@ begin
     -- Module's instance
     -- =================================================================================
 
-    -- Instance of the clipping effect's module
-    clippingEffectInstance : entity work.ClippingEffect(logic)
-    generic map(
-        SAMPLE_WIDTH => SAMPLE_WIDTH,
-        GAIN_WIDTH   => GAIN_WIDTH,
-        TWO_POW_DIV  => TWO_POW_DIV
+    -- Instance of the tremolo effect's module
+    tremoloEffectInstance: entity work.TremoloEffect
+      generic map (
+        SAMPLE_WIDTH            => SAMPLE_WIDTH,
+        MODULATION_SAMPLE_WIDTH => MODULATION_SAMPLE_WIDTH,
+        MODULATION_FREQ_WIDTH   => MODULATION_FREQ_WIDTH,
+        MODULATION_SAMPLES_NUM  => MODULATION_SAMPLES_NUM
+      )
+      port map (
+        reset_n                       => reset_n,
+        clk                           => clk,
+        enable_in                     => enable_in,
+        valid_in                      => valid_in,
+        valid_out                     => valid_out,
+        sample_in                     => sample_in,
+        sample_out                    => sample_out,
+        samples_per_modulation_sample => samples_per_modulation_sample,
+        modulation_sample_in          => modulation_sample_out,
+        modulation_busy_in            => modulation_busy_out,
+        modulation_next_sample_out    => modulation_next_sample_in,
+        busy                          => module_busy
+      );
+
+    -- Instance of the saw wave generator
+    quadrupletGeneratorInstance : entity work.QuadrupletGenerator
+    generic map (
+        SAMPLES_NUM        => MODULATION_SAMPLES_NUM,
+        SAMPLE_WIDTH       => SAMPLE_WIDTH,
+        ADDR_WIDTH         => ADDR_WIDTH,
+        SAMPLE_ADDR_OFFSET => SAMPLE_ADDR_OFFSET,
+        BRAM_LATENCY       => BRAM_LATENCY
     )
-    port map(
-        reset_n       => reset_n,
-        clk           => clk,
-        valid_in      => valid_in,
-        valid_out     => valid_out,
-        sample_in     => sample_in,
-        gain_in       => gain_in,
-        saturation_in => saturation_in,
-        sample_out    => sample_out
+    port map (
+        reset_n    => reset_n,
+        clk        => clk,
+        sample_clk => modulation_next_sample_in,
+        sample_out => modulation_next_sample_out,
+        busy       => modulation_busy_out,
+        addr_out   => addr_out,
+        data_in    => data_in,
+        ena_out    => ena_out
+    );
+
+    -- BRAM instance
+    tremoloEffectBramInstance : TremoloEffectTbBram
+    PORT MAP (
+        clka => clk,
+        rsta => not(reset_n),
+        ena => ena_out,
+        wea => (others => '0'),
+        addra => addr_out,
+        dina => (others => '0'),
+        douta => data_in
     );
 
     -- =================================================================================

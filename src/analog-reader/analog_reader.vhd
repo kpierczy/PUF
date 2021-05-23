@@ -10,29 +10,6 @@
 --
 -- ===================================================================================================================================
 
--- ===================================================================================================================================
--- ------------------------------------------------------- Type definitions ----------------------------------------------------------
--- ===================================================================================================================================
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
--- ------------------------------------------------------------ Package --------------------------------------------------------------
-
-package xadc is
-
-    -- Array of XADC's samples vectors' array
-    type xadcSamplesArray is array(natural range <>) of Unsigned(11 downto 0);
-
-end package xadc;
-
-
-
--- ===================================================================================================================================
--- ------------------------------------------------------------- Module --------------------------------------------------------------
--- ===================================================================================================================================
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -47,7 +24,7 @@ entity AnalogSequenceReader is
         -- System clock's frequency [Hz]
         SYS_CLK_HZ : Positive;
         -- Frequency of conversions
-        SAMPLING_FREQ_HZ : Positive range 1 to SYS_CLK_HZ / 100;
+        SAMPLING_FREQ_HZ : Positive;
         -- Number of channels sampled in sequence by the ADC
         CHANNELS_NUM : Positive range 1 to 16
     );
@@ -57,27 +34,12 @@ entity AnalogSequenceReader is
         -- System clock
         clk : in Std_logic;
 
-        -- ================= XADC Interface ================= --
-
-        -- `Data ready` line
-        drdy_in : in Std_logic;
-        -- Output data lines from the XADC
-        do_in : in Std_logic_vector(15 downto 0);
-        -- `Sampled channel` output lines from the XADC
-        channel_in : in Std_logic_vector(4 downto 0);
-        -- `EOC` (End of Conversion) line
-        eoc_in : in Std_logic;
-        -- `Start conversion` line
-        convst_in : out std_logic;
-        -- Addres lines of the DRP interface
-        daddr_out : out Std_logic_vector(6 downto 0);
-        -- `DRP Enable` line
-        den_out : out Std_logic;
-
-        -- ================ Sampled channels ================ --
-
+        -- Analog inputs
+        anal_in_p, anal_in_n : in Std_logic;
+        -- Select signal for external MUX
+        mux_sel_out : out Std_logic_vector(3 downto 0);
         -- Sampled outputs
-        out_channels : out xadcSamplesArray(0 to CHANNELS_NUM)(11 downto 0)
+        channels_out : out xadcSamplesArray(0 to CHANNELS_NUM - 1)
     );
 
 end entity AnalogSequenceReader;
@@ -86,26 +48,65 @@ end entity AnalogSequenceReader;
 
 architecture logic of AnalogSequenceReader is 
 
-    -- ============================= Constants ============================ --
+    -- =========================== XADC Wrapper =========================== --
 
-    -- Sample's width (to not use raw '12')
-    constant SAMPLE_WIDTH :Positive := 12;
+    -- Address lines mapped to the registers containing conversion results from auxiliary channels
+    signal daddr_in : Std_logic_vector(3 downto 0);
+    -- `DPR Enable` line
+    signal den_in : Std_logic;
+    -- `DRP Data Ready` line
+    signal drdy_out : Std_logic;
+    -- `DRP Output Data` lines mapped to the bits representing samples' values
+    signal do_out : Unsigned(SAMPLE_WIDTH - 1 downto 0);
+    -- `Start conversion` line
+    signal convst_in : Std_logic;
+    -- External MUX select lines (mapped to range <0x0; 0xF>)
+    signal muxaddr_out : Std_logic_vector(3 downto 0);
+    -- `End of conversion` line
+    signal eoc_out : Std_logic;
+    -- `XADC Busy` line
+    signal busy_out : Std_logic;
 
 begin
 
-    -- Value at the `channel_out` lines of the XADC indiacated address of the register
-    -- containing value of the last sampled channel
-    daddr_out <= "00" & channel_in;
+    -- Assert sampling frequency is low enough
+    assert (SAMPLING_FREQ_HZ <= SYS_CLK_HZ / 100)
+        report 
+            "[AnalogReader] Sampling frequency too high!"
+    severity error;
 
-    -- End of conversion can be used to send DRP request for reading sampled value 
-    den_out <= eoc_in;
 
-    -- ===================== Registers' reading logic ===================== --
+    -- ========================================================================================== --
+    -- -------------------------------------- XADC Instance ------------------------------------- --
+    -- ========================================================================================== --
 
+    -- Instance of the XADC wrapper
+    analogSequenceReaderXadcInterfaceInstance: entity work.AnalogSequenceReaderXadcInterface(logic)
+      port map (
+        clk              => clk,
+        reset_n          => reset_n,
+        xadc_daddr_in    => daddr_in,
+        xadc_den_in      => den_in,
+        xadc_drdy_out    => drdy_out,
+        xadc_do_out      => do_out,
+        xadc_convst_in   => convst_in,
+        xadc_anal_in_p   => anal_in_p,
+        xadc_anal_in_n   => anal_in_n,
+        xadc_muxaddr_out => muxaddr_out,
+        xadc_eoc_out     => eoc_out,
+        xadc_busy_out    => busy_out
+      );
+
+    -- ========================================================================================== --
+    -- -------------------------------- Registers' reading logic -------------------------------- --
+    -- ========================================================================================== --
+
+    -- Connect external MUX select lines
+    mux_sel_out <= muxaddr_out;
+
+    -- Main logic of the module
     process(clk, reset_n) is
 
-        -- DRP address of the data registers of the first auxiliary channel
-        constant DATA_REG_OFFSET : Unsigned(channel_in'left downto channel_in'right) := X"10";
         -- Number of system clock's ticks between conversions
         constant SYS_TICKS_PER_CONVERSION : Positive := SYS_CLK_HZ / SAMPLING_FREQ_HZ;
 
@@ -113,7 +114,7 @@ begin
         type Stage is (
             WAIT_FOR_NEXT_CONVERSION_ST,
             WAIT_FOR_CONVERSION_END_ST,
-            WAIT_FOR_DATA_ST
+            WAIT_FOR_CONVERTED_SAMPLE_ST
         );
         -- Actual stage
         variable state : Stage;
@@ -126,15 +127,13 @@ begin
         -- Reset state
         if(reset_n = '0') then
 
-            -- Reset DRP address lines
-            daddr_out <= (others => '0');
-            -- Keep DRP interface disabled
-            den_out <= '0';
+            -- Keep DRP inputs to the XADC low
+            daddr_in <= (others => '0');
+            den_in <= '0';
             -- Reset `Start of conversion` line
             convst_in <= '0';
-
             -- Kepp 'channels' output low
-            out_channels <= (others => (others => '0'));
+            channels_out <= (others => (others => '0'));
             -- Reset register counting system ticks to the start  of the next conversion
             ticks_to_next_conversion := SYS_TICKS_PER_CONVERSION - 1;
 
@@ -145,6 +144,13 @@ begin
 
             -- By default, disable `Start conversion` signal
             convst_in <= '0';
+            -- By default, disable `DRP Enable` signal
+            den_in <= '0';
+
+            -- Decrement counter indicating start of the next conversion
+            if(ticks_to_next_conversion /= 0) then
+                ticks_to_next_conversion := ticks_to_next_conversion - 1;
+            end if;
 
             -- State machine
             case state is
@@ -165,29 +171,34 @@ begin
                         convst_in <= '1';
                         -- Reset counter
                         ticks_to_next_conversion := SYS_TICKS_PER_CONVERSION - 1;
+                        -- Assign address of the next converted channel to the DRP address lines
+                        daddr_in <= muxaddr_out;
                         -- Change state
-                        state := WAIT_FOR_DATA_ST;
+                        state := WAIT_FOR_CONVERSION_END_ST;
+
+                    end if;
+
+                -- Wait for end of conversion
+                when WAIT_FOR_CONVERSION_END_ST =>
+
+                    -- Check `EoC` line
+                    if(eoc_out = '1') then
+
+                        -- Enable DRP read
+                        den_in <= '1';
+                        -- Change state
+                        state := WAIT_FOR_CONVERTED_SAMPLE_ST;
 
                     end if;
 
                 -- Waiting from sampled data appearance on the DRP interface
-                when WAIT_FOR_DATA_ST =>
-
-                    -- =====================================================================
-                    -- Note: request for reading last sampled channel's data is triggered
-                    --   automaticallly as EOC (End of Conversion) line is connected to the 
-                    --   DEN (DRP Enable) line
-                    -- =====================================================================
-
-                    -- Decrement counter indicating start of the next conversion
-                    ticks_to_next_conversion := ticks_to_next_conversion - 1;
+                when WAIT_FOR_CONVERTED_SAMPLE_ST =>
 
                     -- Check whether data was read
-                    if(drdy_in = '1') then
+                    if(drdy_out = '1') then
 
                         -- Copy data to the output
-                        out_channels(Unsigned(channel_in) - DATA_REG_OFFSET) <= 
-                            do_in(SAMPLE_WIDTH + 3 downto 4);
+                        channels_out(to_integer(Unsigned(daddr_in))) <= do_out;
                         -- Change state
                         state := WAIT_FOR_NEXT_CONVERSION_ST;
 
