@@ -158,11 +158,16 @@ begin
     process is
     begin
 
+        -- Keep module disabled
+        enable_in <= '0';
         -- Reset condition
         valid_in <= '0';
 
         -- Wait for end of reset
         wait until reset_n = '1';
+
+        -- Enable module
+        enable_in <= '1';
 
         -- Update `valid_in` in predefined sequence
         loop
@@ -199,6 +204,7 @@ begin
     port map(
         reset_n       => reset_n,
         clk           => clk,
+        enable_in     => enable_in,
         valid_in      => valid_in,
         valid_out     => valid_out,
         sample_in     => sample_in,

@@ -53,6 +53,7 @@ architecture logic of TriangleGeneratorTb is
     -- Next clk's cycle after `sample_clk`'s rising edge a new sample is read from memory
     signal en_in : Std_logic;
     -- Data lines
+    signal sample_out_raw : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
     signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
 
     -- ===================== Verification signals ===================== --
@@ -85,8 +86,11 @@ begin
         reset_n       => reset_n,
         clk           => clk,
         en_in         => en_in,
-        sample_out    => sample_out
+        sample_out    => sample_out_raw
     );
+
+    -- Convert bitvector to number
+    sample_out <= signed(sample_out_raw);
 
     -- =================================================================================
     -- Procedure's validation

@@ -65,6 +65,7 @@ architecture logic of QuadrupleGeneratorTb is
     -- Next clk's cycle after `sample_clk`'s rising edge a new sample is read from memory
     signal en_in : Std_logic;
     -- Data lines
+    signal sample_out_raw : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
     signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
     -- Line is pulled to '1' when module is processing a sample
     signal busy_out : Std_logic;
@@ -150,12 +151,15 @@ begin
         reset_n       => reset_n,
         clk           => clk,
         en_in         => en_in,
-        sample_out    => sample_out,
+        sample_out    => sample_out_raw,
         busy_out      => busy_out,
         bram_addr_out => bram_addr_in,
         bram_data_in  => bram_data_out,
         bram_en_out   => bram_en_in
     );
+
+    -- Convert bitvector to number
+    sample_out <= Signed(sample_out_raw);
 
     -- BRAM instance
     quadrupletGeneratorBramInstance : QuadrupletGeneratorTbBram

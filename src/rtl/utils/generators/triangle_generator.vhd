@@ -13,11 +13,15 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+library work;
+use work.generator.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
 entity TriangleGenerator is
     generic(
+        -- Output mode
+        MODE : SIGNESS := SIGNED_OUT;
         -- Width of the single sample
         SAMPLE_WIDTH : Positive
     );
@@ -30,8 +34,7 @@ entity TriangleGenerator is
         -- Signal starting generation of the next sample (active high)
         en_in : in Std_logic;
         -- Data lines
-        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0)
-
+        sample_out : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
     );
 end entity TriangleGenerator;
 
@@ -40,7 +43,7 @@ end entity TriangleGenerator;
 architecture logic of TriangleGenerator is
 
     -- Internal counter signal (connected to the @out sample_out)
-    signal counter : Signed(SAMPLE_WIDTH - 1 downto 0);
+    signal counter : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
 
 begin
 
@@ -74,20 +77,53 @@ begin
                 -- Test counter's direction
                 if(direction = UP) then
                     
-                    -- Increment counter
-                    counter <= counter + 1;
-                    -- Change direction if required
-                    if(counter = 2**(SAMPLE_WIDTH - 1) - 2) then
-                        direction := DOWN;
+                    -- Depending on signess
+                    if(MODE = SIGNED_OUT) then
+
+                        -- Increment counter
+                        counter <= Std_logic_vector(Signed(counter) + 1);
+
+                        -- Change direction if required
+                        if(Signed(counter) = 2**(SAMPLE_WIDTH - 1) - 2) then
+                            direction := DOWN;
+                        end if;
+                        
+                    else
+
+                        -- Increment counter
+                        counter <= Std_logic_vector(Unsigned(counter) + 1);
+
+                        -- Change direction if required
+                        if(Unsigned(counter) = 2**SAMPLE_WIDTH - 2) then
+                            direction := DOWN;
+                        end if;
+
                     end if;
+
 
                 else
 
-                    -- Decrement counter
-                    counter <= counter - 1;
-                    -- Change direction if required
-                    if(counter = - 2**(SAMPLE_WIDTH - 1) + 1) then
-                        direction := UP;
+                    -- Depending on signess
+                    if(MODE = SIGNED_OUT) then
+
+                        -- Decrement counter
+                        counter <= Std_logic_vector(Signed(counter) - 1);
+                        
+                        -- Change direction if required
+                        if(Signed(counter) = - 2**(SAMPLE_WIDTH - 1) + 1) then
+                            direction := UP;
+                        end if;
+
+                    else
+
+                        -- Decrement counter
+                        counter <= Std_logic_vector(Unsigned(counter) - 1);
+                        
+                        -- Change direction if required
+                        if(Unsigned(counter) = 1) then
+                            direction := UP;
+                        end if;
+
                     end if;
 
                 end if;

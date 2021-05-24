@@ -199,7 +199,7 @@ package body sim is
         -- Peiord of the system clock
         constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ; 
         -- Counter used to generate sinus wave
-        variable ticks : Positive;
+        variable ticks : Natural;
     begin
         -- -- Reset condition
         ticks := 0;

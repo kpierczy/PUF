@@ -32,3 +32,19 @@
     * Rest options: `Disabled`
 3. Other Options:
     - Load Init File: `Enabled`
+
+# TremoloEffectBram
+
+1. Basic:
+    - Interface type: `Native`
+    - Memory type: `Single Port RAM`
+2. Port A Options:
+    - Read/Write Width: `16`
+    - Read/Write Depth: `129`
+    - Operating Mode: `Read First`
+    - Core Output Register: `Enabled`
+    - RSTA Pin (set/reset pin): `Enabled`
+    - Enable port type: `Use ENA Pin`
+    * Rest options: `Disabled`
+3. Other Options:
+    - Load Init File: `Enabled`

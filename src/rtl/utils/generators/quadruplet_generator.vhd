@@ -16,22 +16,30 @@
 --    This is true for basic periodic function as sine wave, triangle wave or square wave. Module is accommodated to function along 
 --    with native BRAM interface. Latency of the BRAM read operation can be set via generics.
 --
+--    Generator can also be used in the unsigned mode where samples are treated as shifted to the half of the range.
+--
 -- @ Note: Samples are assumed to be U2-coded signed values
--- @ Note: Last sample in the memory is assumed to be local maximum of the wave. As so number of samples per wave's period is 4N - 3.
+-- @ Note: Last sample in the memory is assumed to be local maximum of the wave. As so number of samples per wave's period is 4N - 4.
 --     For example to generate sine wave containing 1024 evenly spaced samples per period one need to provide BRAM block containing
 --     257 (evenly spaced) samples taken from range <0;pi/2>.
 -- @ Note: Samples are assumed to be allocated from the address 0x0 in the BRAM.
 -- @ Note: Latency of the module is one @in clk's cycle longer than BRAM's latency.
 -- ===================================================================================================================================
 
+-- ===================================================================================================================================
+-- ------------------------------------------------------------- Entity --------------------------------------------------------------
+-- ===================================================================================================================================
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
--- ------------------------------------------------------------- Entity --------------------------------------------------------------
+library work;
+use work.generator.all;
 
 entity QuadrupletGenerator is
     generic(
+        -- Output mode
+        MODE : SIGNESS := SIGNED_OUT;
         -- Number of samples in a quarter
         SAMPLES_NUM : Positive;
         -- Width of the single sample
@@ -50,7 +58,7 @@ entity QuadrupletGenerator is
         -- Signal starting generation of the next sample (active high)
         en_in : in Std_logic;
         -- Data lines
-        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
+        sample_out : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
         -- Line is pulled to '1' when module is processing a sample
         busy_out : out Std_logic;
 
@@ -153,8 +161,16 @@ begin
 
                         -- Output appropriate sample
                         case quarter is
-                            when Q1|Q2 => sample_out <=  Signed(bram_data_in);
-                            when Q3|Q4 => sample_out <= -Signed(bram_data_in);
+                            when Q1|Q2 => 
+                                    sample_out <=  Std_logic_vector(bram_data_in);
+                            when Q3|Q4 => 
+                                if(MODE = SIGNED_OUT) then
+                                    sample_out <= Std_logic_vector(-Signed(bram_data_in));
+                                else
+                                    sample_out <= Std_logic_vector(
+                                       2**(SAMPLE_WIDTH - 1) - Unsigned(bram_data_in)
+                                    );
+                                end if;
                         end case;
 
                         -- Increment or decrement next read address

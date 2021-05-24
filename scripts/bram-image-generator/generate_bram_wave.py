@@ -21,7 +21,7 @@ from pathlib import Path
 # ---------------------------------------------------------- Configuration -----------------------------------------------------------
 
 # Path to the output file
-FILE_PATH = "data/quadruplet-tb-bram/quadruplet_generator_bram.txt"
+FILE_PATH = "data/tremolo-effect-bram/tremolo_effect_bram.txt"
 
 # If true, an additional MIF file representation is generated
 MIF_FILE = True
@@ -40,8 +40,11 @@ WAVE_TYPE = 'sin'
 # Coefficient that the sample is multiplied before being converted to the file representation
 GAIN = 2**15 - 1
 
+# Shift of the generated wave (before gain)
+SHIFT = 1
+
 # Number of samples to be generated
-SAMPLES_NUM = 65
+SAMPLES_NUM = 129
 
 # Function's argument's range to be taken into account (both sides inclusively)
 ARG_RANGE = (0, math.pi / 2)
@@ -101,7 +104,7 @@ file.write(f'0x{ADDRESS_OFFSET:X} = ')
 for i in range(0, SAMPLES_NUM):
 
     # Get sample
-    sample = int(get_sample(WAVE_TYPE, args[i]) * GAIN)
+    sample = int((get_sample(WAVE_TYPE, args[i]) + SHIFT) * GAIN)
 
     # Print sample's representation to the file
     file.write(f'{sample:X}')
