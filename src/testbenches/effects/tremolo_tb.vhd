@@ -13,8 +13,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
-use work.sim.all;
 use work.tremolo.all;
+use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
@@ -27,15 +27,20 @@ entity TremoloEffectTb is
 
         -- ======================== Effect's parameters ========================= --
 
-        -- Generator type
-        GENERATOR_TYPE : Generator := QUADRUPLET;
         -- Width of the input sample
-        SAMPLE_WIDTH : Positive range 2 to 32 := 16;
+        SAMPLE_WIDTH : Positive := 16;
+
+        -- ====================== Effect generator's type ======================= --
+
+        -- Generator type
+        GENERATOR_TYPE : Generator := TRIANGLE;
 
         -- ====================== Modulation's parameters ======================= --
 
+        -- Width of the modulation wave's depth input
+        MODULATION_DEPTH_WIDTH : Positive := 16;
         -- Width of the modulating sample
-        MODULATION_SAMPLE_WIDTH : Positive range 2 to 32 := 16;
+        MODULATION_SAMPLE_WIDTH : Positive := 8;
         -- Width of the `ticks_per_sample` input
         MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive := 16;
 
@@ -48,18 +53,44 @@ entity TremoloEffectTb is
         -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
         BRAM_LATENCY : Positive := 2;
         
-        -- ======================= Simulation's parameters ====================== --
+        -- ===================== Input signal's parameters ====================== --
 
-        -- Frequency of the input wave
-        INPUT_FREQU_HZ : Positive := 1_000;
-        -- Amplitude of the input wave in normalized range (0; 1>
-        INPUT_AMPLITUDE : Real := 1.0;
+        -- -------------------------------------------------------------------------
+        -- @Note: Stimulus signals for effect's parameters are generated as random 
+        --    steps with given frequency and amplitude.
+        -- -------------------------------------------------------------------------
+
+        -- Type of the input wave (available: [sin])
+        INPUT_TYPE : String := "sin";
+
+        -- Frequency of the input signal 
+        INPUT_FREQ_HZ : Positive := 1000;
+        -- Amplitude of the input wave in normalized range <0; 1>
+        INPUT_AMPLITUDE : Real := 0.5;
+        -- Sampling frequency of the input signal
+        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
         
-        -- Frequency of the modulating wave [Hz]
-        MODULATION_FREQ_HZ : Positive := 6;
+        -- ================ Effect parameters' stimulus signals ================= --
 
-        -- Frequency of the module's input samples [Hz]
-        SAMPLING_FREQUENCY_HZ : Positive := 44_100
+        -- -------------------------------------------------------------------------
+        -- @Note: Stimulus signals for effect's parameters are generated as random 
+        --    steps with given frequency and amplitude.
+        -- -------------------------------------------------------------------------
+
+        -- Additional argument used to automatically calculate MODULATION_TICKS_PER_SAMPLE_AMPLITUDE
+        -- for the given modulation frequency (MODULATION_TICKS_PER_SAMPLE_AMPLITUDE used when < 0)
+        MODULATION_FREQ_HZ_AMPLITUDE : Integer := 50;
+
+        -- Amplitudes of `depth_in` input's values in normalized range <0; 1>
+        MODULATION_DEPTH_AMPLITUDE : Real := 0.5;
+        -- Frequency of the changes of `depth_in` input
+        MODULATION_TOGGLE_DEPTH_FREQ_HZ : Natural := 0;
+
+        -- Amplitudes of `modulation_ticks_per_sample_in` input's values in normalized range <0; 1>
+        MODULATION_TICKS_PER_SAMPLE_AMPLITUDE : Real := 0.0;
+        -- Frequency of the changes of `modulation_ticks_per_sample_in` input
+        MODULATION_TOGGLE_TICKS_PER_SAMPLE_FREQ_HZ : Natural := 0
+
     );
 end entity TremoloEffectTb;
 
@@ -75,7 +106,7 @@ architecture logic of TremoloEffectTb is
     -- System clock
     signal clk : Std_logic := '0';
 
-    -- ====================== Module's interface ====================== --
+    -- ================== Common effects's interface ================== --
 
     -- Module's enable signal
     signal enable_in : Std_logic := '1';
@@ -86,16 +117,49 @@ architecture logic of TremoloEffectTb is
     -- Signal for new sample on output (rising-edge-active)
     signal valid_out : Std_logic;
     
+    -- ================= Specific effects's interface ================= --
+
+    -- Tremolo's depth aprameter (treated as value in <0, 1) range)
+    signal depth_in : Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);  
     -- Module's saturation
-    signal ticks_per_modulation_sample : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
+    signal ticks_per_modulation_sample_in : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
 
     -- ====================== Auxiliary signals ====================== --
 
     -- Real-converted input signal
-    signal sample_in_tmp : Real;
+    signal sample_tmp : Real;
+    -- Real-converted input signal
+    signal depth_tmp : Real;
+    -- Real-converted input signal
+    signal ticks_per_modulation_sample_tmp : Real;
+
+    -- ===================== Auxiliary functions ===================== --
+
+    -- Chooses actual value of the MODULATION_TICKS_PER_SAMPLE_AMPLITUDE
+    impure function calculate_ticks_per_sample_amplitude return Real is
+    begin
+        -- If modulation signal is NOT given with the particulat frequency
+        if(MODULATION_FREQ_HZ_AMPLITUDE < 0) then
+            return Real(Integer(MODULATION_TICKS_PER_SAMPLE_AMPLITUDE * (2**MODULATION_TICKS_PER_SAMPLE_WIDTH - 1)));
+        -- Else
+        else
+            -- If triangle generator used
+            if(GENERATOR_TYPE = TRIANGLE) then
+                return Real(Integer(
+                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / 2**(MODULATION_SAMPLE_WIDTH + 1)));
+            -- If quadruplet generator used
+            else
+                return Real(Integer(
+                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / (BRAM_SAMPLES_NUM * 4  - 4)));
+            end if;
+        end if;
+    end function;
+
+    -- Amplitudes of `modulation_ticks_per_sample_in` input's values in normalized range <0; 1>
+    constant ACTUAL_MODULATION_TICKS_PER_SAMPLE_AMPLITUDE : Real := calculate_ticks_per_sample_amplitude;
 
 begin
-
+    
     -- =================================================================================
     -- System signals
     -- =================================================================================
@@ -112,97 +176,91 @@ begin
 
     -- Instance of the tremolo effect's module
     tremoloeffect_inst: entity work.TremoloEffect
-      generic map (
+    generic map (
         GENERATOR_TYPE                    => GENERATOR_TYPE,
         SAMPLE_WIDTH                      => SAMPLE_WIDTH,
         MODULATION_SAMPLE_WIDTH           => MODULATION_SAMPLE_WIDTH,
+        MODULATION_DEPTH_WIDTH            => MODULATION_DEPTH_WIDTH,
         MODULATION_TICKS_PER_SAMPLE_WIDTH => MODULATION_TICKS_PER_SAMPLE_WIDTH,
         BRAM_SAMPLES_NUM                  => BRAM_SAMPLES_NUM,
         BRAM_ADDR_WIDTH                   => BRAM_ADDR_WIDTH,
         BRAM_LATENCY                      => BRAM_LATENCY
-      )
-      port map (
-        reset_n                     => reset_n,
-        clk                         => clk,
-        enable_in                   => enable_in,
-        valid_in                    => valid_in,
-        valid_out                   => valid_out,
-        sample_in                   => sample_in,
-        sample_out                  => sample_out,
-        ticks_per_modulation_sample => ticks_per_modulation_sample
-      );
-
-    -- =================================================================================
-    -- Input signals' generation (all signals changed at falling edge to not interfere
-    -- with module)
-    -- =================================================================================
-
-    -- Generate input signal
-    sample_in <= to_signed(integer(sample_in_tmp), SAMPLE_WIDTH);
-    generate_sin(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => INPUT_FREQU_HZ,
-        PHASE_SHIFT  => 0.0,
-        AMPLITUDE    => Real(INPUT_AMPLITUDE) * (2**(SAMPLE_WIDTH - 1) - 1),
-        OFFSET       => 0.0,
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => sample_in_tmp
+    )
+    port map (
+        reset_n                        => reset_n,
+        clk                            => clk,
+        enable_in                      => enable_in,
+        valid_in                       => valid_in,
+        valid_out                      => valid_out,
+        sample_in                      => sample_in,
+        sample_out                     => sample_out,
+        depth_in                       => depth_in,
+        ticks_per_modulation_sample_in => ticks_per_modulation_sample_in
     );
 
-    -- `valid_in` generator
-    process is
-    begin
-
-        -- Keep module disabled
-        enable_in <= '0';
-        -- Reset condition
-        valid_in <= '0';
-
-        -- Wait for end of reset
-        wait until reset_n = '1';
-
-        -- Enable module
-        enable_in <= '1';
-
-        -- Update `valid_in` in predefined sequence
-        loop
-
-            -- Wait for rising edge
-            wait until rising_edge(clk);
-
-            -- Inform about new sample
-            valid_in <= '1';
-            -- Wait a cycle to pull `vali_in` low
-            wait for CLK_PERIOD;
-            valid_in <= '0';
-
-            -- Wait a gap time before triggering the next cycle
-            wait for 1 sec / SAMPLING_FREQUENCY_HZ - CLK_PERIOD;
-
-        end loop;
-    end process;
-
     -- =================================================================================
-    -- Auxiliary procedures
+    -- Input signals' generation 
     -- =================================================================================
-
-    -- When triangle modulator is used
-    triangleModulatorCase : if GENERATOR_TYPE = TRIANGLE generate
-        
-        ticks_per_modulation_sample <= to_unsigned(
-            SYS_CLK_HZ / MODULATION_FREQ_HZ / 2**(MODULATION_SAMPLE_WIDTH + 1), ticks_per_modulation_sample'length
+    
+    -- Generate input signal : sin
+    inputSin : if INPUT_TYPE = "sin" generate
+        sample_in <= to_signed(integer(sample_tmp), SAMPLE_WIDTH);
+        generate_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
         );
-
     end generate;
 
-    -- When quadruplet modulator is used
-    quadrupletModulatorCase : if GENERATOR_TYPE = QUADRUPLET generate
-        
-        ticks_per_modulation_sample <= to_unsigned(
-            SYS_CLK_HZ / MODULATION_FREQ_HZ / (BRAM_SAMPLES_NUM * 4  - 4), ticks_per_modulation_sample'length
-        );
-        
-    end generate;
+    -- Generate `depth` signal
+    depth_in <= to_unsigned(Natural(depth_tmp), MODULATION_DEPTH_WIDTH);
+    generate_random_stairs(
+        SYS_CLK_HZ   => SYS_CLK_HZ,
+        FREQUENCY_HZ => MODULATION_TOGGLE_DEPTH_FREQ_HZ,
+        MIN_VAL      => 0.0,
+        MAX_VAL      => Real(Integer(MODULATION_DEPTH_AMPLITUDE * (2**MODULATION_DEPTH_WIDTH - 1))),
+        reset_n      => reset_n,
+        clk          => clk,
+        wave         => depth_tmp
+    );
+
+    -- Generate `modulation_ticks_per_sample_in signal
+    ticks_per_modulation_sample_in <= to_unsigned(Natural(ticks_per_modulation_sample_tmp), MODULATION_TICKS_PER_SAMPLE_WIDTH);
+    generate_random_stairs(
+        SYS_CLK_HZ   => SYS_CLK_HZ,
+        FREQUENCY_HZ => MODULATION_TOGGLE_TICKS_PER_SAMPLE_FREQ_HZ,
+        MIN_VAL      => 0.0,
+        MAX_VAL      => ACTUAL_MODULATION_TICKS_PER_SAMPLE_AMPLITUDE,
+        reset_n      => reset_n,
+        clk          => clk,
+        wave         => ticks_per_modulation_sample_tmp
+    );    
+
+    -- =================================================================================
+    -- Input signal's sampling process
+    -- =================================================================================
+
+    -- Enable `enable_in` signal on end of reset
+    enable_on_end_of_reset(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        ENABLE_DELAY_CLK => 0,
+        clk              => clk,
+        reset_n          => reset_n,
+        sig              => enable_in
+    );
+
+    -- Generate sampling pulse 
+    generate_clk(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
+        reset_n          => reset_n,
+        clk              => clk,
+        wave             => valid_in
+    );
 
 end architecture logic;

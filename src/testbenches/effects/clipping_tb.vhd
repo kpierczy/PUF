@@ -19,37 +19,58 @@ use work.sim.all;
 
 entity ClippingEffectTb is
     generic(
+
         -- System clock frequency
         SYS_CLK_HZ : Positive := 200_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
+        -- ======================== Effect's parameters ========================= --
+
         -- Width of the input sample
-        SAMPLE_WIDTH : Positive range 1 to 32 := 16;
+        SAMPLE_WIDTH : Positive := 16;
+
+        -- ========================= Gain's parameters ========================== --
+
         -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive range 1 to 31 := 12;
+        GAIN_WIDTH : Positive := 12;
         -- Index of the 2's power that the multiplication's result is divided by before saturation
-        TWO_POW_DIV : Natural range 0 to 31 := 11;
+        TWO_POW_DIV : Natural := 11;
         
-        -- Frequency of the input wave
-        SAMPLE_FREQU_HZ : Positive := 44_100;
-        -- Amplitude of the input wave in normalized range (0; 1>
-        SAMPLE_AMPLITUDE : Real := 0.5;
-        
-        -- Frequency of the input wave
-        GAIN_FREQU_HZ : Positive := 44_100;
-        -- Phase shift of the gain wave with respsect to sample wave
-        GAIN_PHAZE_SHIFT : Real := 0.0;
-        -- Amplitude of the gain input wave in normalized range (0; 1>
+        -- ===================== Input signal's parameters ====================== --
+
+        -- -------------------------------------------------------------------------
+        -- @Note: Stimulus signals for effect's parameters are generated as random 
+        --    steps with given frequency and amplitude.
+        -- -------------------------------------------------------------------------
+
+        -- Type of the input wave (available: [sin])
+        INPUT_TYPE : String := "sin";
+
+        -- Frequency of the input signal 
+        INPUT_FREQU_HZ : Natural := 2000;
+        -- Amplitude of the input wave in normalized range <0; 1>
+        INPUT_AMPLITUDE : Real := 0.5;
+        -- Sampling frequency of the input signal
+        INPUT_SAMPLING_FREQ_HZ : Positive := 44100;
+
+        -- ================ Effect parameters' stimulus signals ================= --
+
+        -- -------------------------------------------------------------------------
+        -- @Note: Stimulus signals for effect's parameters are generated as random 
+        --    steps with given frequency and amplitude.
+        -- -------------------------------------------------------------------------
+
+        -- Amplitudes of gain values in normalized range <0; 1>
         GAIN_AMPLITUDE : Real := 0.75;
+        -- Frequency of the changes of `gain_in` input
+        GAIN_TOGGLE_FREQ_HZ : Natural := 120;
 
-        -- Amplitudes of clips in normalized range (0; 1>
+        -- Amplitudes of clips in normalized range <0; 1>
         SATURATION_AMPLITUDE : Real := 0.75;
-        -- Time between subsequent changes in saturation value
-        SATURATION_TOGGLE_HZ : Positive := 22_050;
+        -- Frequency of the changes of `saturation_in` input
+        SATURATION_TOGGLE_FREQ_HZ : Natural := 100
 
-        -- Time between end of conversion and start of the next conversion
-        CONVERSIONS_GAP : Time := 5 ns
     );
 end entity ClippingEffectTb;
 
@@ -65,29 +86,24 @@ architecture logic of ClippingEffectTb is
     -- System clock
     signal clk : Std_logic := '0';
 
-    -- ====================== Module's interface ====================== --
+    -- ================== Common effects's interface ================== --
 
     -- Module's enable signal
     signal enable_in : Std_logic := '1';
     -- Input and output samples
-    signal sample_in, sample_out :  Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+    signal sample_in, sample_out : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+
     -- Signal for new sample on input (rising-edge-active)
     signal valid_in : Std_logic := '0';
     -- Signal for new sample on output (rising-edge-active)
     signal valid_out : Std_logic;
+
+    -- ================= Specific effects's interface ================= --
+
     -- Module's gain
     signal gain_in : Unsigned(GAIN_WIDTH - 1 downto 0);
     -- Module's saturation
     signal saturation_in : Unsigned(SAMPLE_WIDTH - 2 downto 0);
-
-    -- ===================== Verification signals ===================== --
-
-    -- Desired value of gain and sample multiplication  (with 2-power division)
-    signal mul_out_expected : Signed(SAMPLE_WIDTH + GAIN_WIDTH - TWO_POW_DIV downto 0) := (others => '0');
-    -- Desired value of sample 
-    signal sample_out_expected : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-    -- `Valid output` flag tracking whether module works fine
-    signal sample_out_valid : Std_logic := '0';
 
     -- ====================== Auxiliary signals ====================== --
 
@@ -109,86 +125,6 @@ begin
 
     -- Reset signal
     reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
-
-    -- =================================================================================
-    -- Input signals' generation (all signals changed at falling edge to not interfere
-    -- with module)
-    -- =================================================================================
-
-    -- Generate input signal
-    sample_in <= to_signed(integer(sample_in_tmp), SAMPLE_WIDTH);
-    generate_sin(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
-        PHASE_SHIFT  => 0.0,
-        AMPLITUDE    => Real(SAMPLE_AMPLITUDE) * (2**(SAMPLE_WIDTH - 1) - 1),
-        OFFSET       => 0.0,
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => sample_in_tmp
-    );
-
-
-    -- Generate gain signal
-    gain_in <= to_unsigned(Natural(gain_in_tmp), GAIN_WIDTH);
-    generate_sin(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
-        PHASE_SHIFT  => GAIN_PHAZE_SHIFT,
-        AMPLITUDE    => Real(GAIN_AMPLITUDE) * (2**(GAIN_WIDTH - 1) - 1),
-        OFFSET       => Real(GAIN_AMPLITUDE) * (2**(GAIN_WIDTH - 1) - 1),
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => gain_in_tmp
-    );
-
-    -- Generate saturation signal
-    saturation_in <= to_unsigned(Natural(saturation_in_tmp), SAMPLE_WIDTH - 1);
-    generate_random_stairs(
-        SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => SAMPLE_FREQU_HZ,
-        MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(SATURATION_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1))),
-        reset_n      => reset_n,
-        clk          => clk,
-        wave         => saturation_in_tmp
-    );
-
-    -- `valid_in` generator
-    process is
-    begin
-
-        -- Keep module disabled
-        enable_in <= '0';
-        -- Reset condition
-        valid_in <= '0';
-
-        -- Wait for end of reset
-        wait until reset_n = '1';
-
-        -- Enable module
-        enable_in <= '1';
-
-        -- Update `valid_in` in predefined sequence
-        loop
-
-            -- Wait for rising edge
-            wait until rising_edge(clk);
-
-            -- Inform about new sample
-            valid_in <= '1';
-            -- Wait a cycle to pull `vali_in` low
-            wait for CLK_PERIOD;
-            valid_in <= '0';
-
-            -- Wait for the end of conversion
-            wait until falling_edge(valid_out);
-
-            -- Wait a gap time before triggering the next cycle
-            wait for CONVERSIONS_GAP;
-
-        end loop;
-    end process;
 
     -- =================================================================================
     -- Module's instance
@@ -214,88 +150,68 @@ begin
     );
 
     -- =================================================================================
-    -- Procedure's validation
+    -- Input signals' generation 
     -- =================================================================================
 
-    -- Validate Module
-    process is
+    -- Generate input signal : sin
+    inputSin : if INPUT_TYPE = "sin" generate
+        sample_in <= to_signed(integer(sample_in_tmp), SAMPLE_WIDTH);
+        generate_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQU_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE) * (2**(SAMPLE_WIDTH - 1) - 1),
+            OFFSET       => 0.0,
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_in_tmp
+        );
+    end generate;
 
-        -- Sample buffer latched on rising edge of the  `valid_in` signal
-        variable sample_buf : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-        -- Sample buffer latched on rising edge of the  `valid_in` signal
-        variable gain_buf : Unsigned(GAIN_WIDTH - 1 downto 0) := (others => '0');
-        -- Sample buffer latched on rising edge of the  `valid_in` signal
-        variable saturation_buf : Unsigned(SAMPLE_WIDTH - 2 downto 0) := (others => '0');
-        
-        -- Local result of multiplication
-        variable result : Signed(SAMPLE_WIDTH + GAIN_WIDTH - TWO_POW_DIV downto 0) := (others => '0');
-        -- Local copy of expected output of the block
-        variable sample_out_expected_var : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+    -- Generate gain signal
+    gain_in <= to_unsigned(Natural(gain_in_tmp), GAIN_WIDTH);
+    generate_random_stairs(
+        SYS_CLK_HZ   => SYS_CLK_HZ,
+        FREQUENCY_HZ => GAIN_TOGGLE_FREQ_HZ,
+        MIN_VAL      => 0.0,
+        MAX_VAL      => Real(Integer(GAIN_AMPLITUDE * (2**GAIN_WIDTH - 1))),
+        reset_n      => reset_n,
+        clk          => clk,
+        wave         => gain_in_tmp
+    );
 
-        -- High limit for the output value
-        variable high_limit : Signed(SAMPLE_WIDTH - 1 downto 0);
-        -- Low limit for the output value
-        variable low_limit : Signed(SAMPLE_WIDTH - 1 downto 0);
+    -- Generate saturation signal
+    saturation_in <= to_unsigned(Natural(saturation_in_tmp), SAMPLE_WIDTH - 1);
+    generate_random_stairs(
+        SYS_CLK_HZ   => SYS_CLK_HZ,
+        FREQUENCY_HZ => SATURATION_TOGGLE_FREQ_HZ,
+        MIN_VAL      => 0.0,
+        MAX_VAL      => Real(Integer(SATURATION_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1))),
+        reset_n      => reset_n,
+        clk          => clk,
+        wave         => saturation_in_tmp
+    );
 
-    begin
+    -- =================================================================================
+    -- Input signal's sampling process
+    -- =================================================================================
 
-        -- Keep output signals low
-        sample_out_expected <= (others => '0');
-        mul_out_expected <= (others => '0');
-        sample_out_valid <= '0';
-        -- Keep interal buffers low
-        sample_buf := (others => '0');
-        gain_buf := (others => '0');
-        saturation_buf := (others => '0');
-        result := (others => '0');
-        sample_out_expected_var := (others => '0');
-        high_limit := (others => '0');
-        low_limit := (others => '0');
+    -- Enable `enable_in` signal on end of reset
+    enable_on_end_of_reset(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        ENABLE_DELAY_CLK => 0,
+        clk              => clk,
+        reset_n          => reset_n,
+        sig              => enable_in
+    );
 
-        -- Wait for end of reset
-        wait until reset_n = '1';
-
-        -- Validate module's output in loop
-        loop
-
-            -- Wait on the next rising edge after `valid_in` is pulled high
-            wait until valid_in = '1';
-            wait for CLK_PERIOD;
-            -- Sample input data
-            sample_buf := sample_in;
-            gain_buf := gain_in;
-            saturation_buf := saturation_in;
-
-            -- Wait on the nex clk's falling edge after `valid_out` pulled high
-            wait until valid_out = '1';
-            wait until falling_edge(clk);
-            
-            -- Compute multiplication with division
-            result := resize(sample_buf * Signed(resize(gain_buf, GAIN_WIDTH + 1)) / 2**TWO_POW_DIV, result'length);
-            -- Make multiplication's result visible to the simulation
-            mul_out_expected <= result;
-            -- Compute saturation limits
-            high_limit :=  Signed(resize(saturation_buf, SAMPLE_WIDTH));
-            low_limit  := -Signed(resize(saturation_buf, SAMPLE_WIDTH));
-            -- Compute expected output
-            if(result > resize(high_limit, result'length)) then
-                sample_out_expected_var := high_limit;
-            elsif(result < resize(low_limit, result'length)) then
-                sample_out_expected_var := low_limit;
-            else
-                sample_out_expected_var := resize(result, SAMPLE_WIDTH);
-            end if;
-            -- Make expected output visible
-            sample_out_expected <= sample_out_expected_var;
-            -- Check whether output matches desired one
-            if(sample_out /= sample_out_expected_var) then
-                sample_out_valid <= '0';
-            else
-                sample_out_valid <= '1';
-            end if;
-            
-        end loop;
-
-    end process;
+    -- Generate sampling pulse 
+    generate_clk(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
+        reset_n          => reset_n,
+        clk              => clk,
+        wave             => valid_in
+    );
 
 end architecture logic;

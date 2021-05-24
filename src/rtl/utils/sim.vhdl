@@ -27,6 +27,20 @@ package sim is
     -- Resetting procedure
     procedure reset_tb(reset_time : time; signal reset_n : out std_logic);
 
+    -- Signal resetting procedure
+    procedure enable_on_end_of_reset(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Number of system clock's cycles of enable delay efter reset off
+        constant ENABLE_DELAY_CLK : natural;
+        -- Clock signal
+        signal clk : in std_logic;        
+        -- Reset signal
+        signal reset_n : in std_logic;
+        -- Controlled siganl
+        signal sig : out std_logic
+    );
+
     -- ===================================================================
     -- Random generators
     -- ===================================================================
@@ -55,10 +69,10 @@ package sim is
 
     -- Generates sine wave updating samples at rising edge of the clock
     procedure generate_sin(
-        -- System cl    ock's frequency
+        -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
-        constant FREQUENCY_HZ : Positive;
+        constant FREQUENCY_HZ : Natural;
         -- Wave's phase shift (in normalized range (0;1>)
         constant PHASE_SHIFT : Real;
         -- Wave's amplitude
@@ -73,12 +87,26 @@ package sim is
         signal wave : out Real
     );
 
+    -- Clocking procedure with reset
+    procedure generate_clk(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal wave : out std_logic
+    );
+
     -- Generates random `stairs` with values in given range updating samples at rising edge of the clock
     procedure generate_random_stairs(
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
-        constant FREQUENCY_HZ : Positive;
+        constant FREQUENCY_HZ : Natural;
         -- Wave's min val
         constant MIN_VAL : Real;
         -- Wave's max val
@@ -118,6 +146,35 @@ package body sim is
         reset_n <= '0';
         wait for reset_time;
         reset_n <= '1';
+    end procedure;
+
+    -- Signal resetting procedure
+    procedure enable_on_end_of_reset(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Number of system clock's cycles of enable delay efter reset off
+        constant ENABLE_DELAY_CLK : natural;
+        -- Clock signal
+        signal clk : in std_logic;
+        -- Reset signal
+        signal reset_n : in std_logic;
+        -- Controlled siganl
+        signal sig : out std_logic
+    ) is
+    begin
+
+        -- Disable signal
+        sig <= '0';
+        -- Wait for end of reset
+        wait until reset_n = '1';
+        for i in 0 to ENABLE_DELAY_CLK loop
+            wait until rising_edge(clk);
+        end loop;
+        -- Enable signal
+        sig <= '1';
+        -- End procedure
+        wait;
+
     end procedure;
 
     -- ===================================================================
@@ -182,7 +239,7 @@ package body sim is
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
-        constant FREQUENCY_HZ : Positive;
+        constant FREQUENCY_HZ : Natural;
         -- Wave's phase shift (in normalized range (0;2pi>)
         constant PHASE_SHIFT : Real;
         -- Wave's amplitude
@@ -210,19 +267,62 @@ package body sim is
         -- -- Update wave on rising edges
         loop
             ticks := ticks + 1;
-            wave <= AMPLITUDE * sin(Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
+            wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
             wait for CLK_PERIOD;
         end loop;
 
     end procedure;
 
+    -- Binary clock signal
+    procedure generate_clk(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal wave : out std_logic
+    ) is
+
+        -- Peiord of the system clock
+        constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;      
+
+    begin
+
+        -- Reset condition
+        wave <= '0';
+
+        -- Wait for end of reset
+        wait until reset_n = '1';
+
+        -- Update `wave` in predefined sequence
+        loop
+
+            -- Wait for rising edge
+            wait until rising_edge(clk);
+
+            -- Inform about new sample
+            wave <= '1';
+            -- Wait a cycle to pull `vali_in` low
+            wait for CLK_PERIOD;
+            wave <= '0';
+
+            -- Wait a gap time before triggering the next cycle
+            wait for 1 sec / FREQUENCY_HZ - CLK_PERIOD;
+
+        end loop;
+
+    end procedure;
 
     -- Generates random `stairs` with values in given range
     procedure generate_random_stairs(
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
-        constant FREQUENCY_HZ : Positive;
+        constant FREQUENCY_HZ : Natural;
         -- Wave's min val
         constant MIN_VAL : Real;
         -- Wave's max val
@@ -244,12 +344,17 @@ package body sim is
         -- Wait for end of reset
         wait until reset_n = '1';
 
-        -- Update saturation on falling edges
-        loop
-            wait until falling_edge(clk);
-            wave <= rand_real(MIN_VAL, MAX_VAL);
-            wait for CLK_PERIOD * (SYS_CLK_HZ / FREQUENCY_HZ);
-        end loop;
+        -- When 0 frequency, just push amplitude value
+        if(FREQUENCY_HZ /= 0) then
+            loop
+                wait until falling_edge(clk);
+                wave <= rand_real(MIN_VAL, MAX_VAL);
+                wait for CLK_PERIOD * (SYS_CLK_HZ / FREQUENCY_HZ);
+            end loop;
+        else
+            wave <= MAX_VAL;
+            wait;
+        end if;
 
     end procedure;
 

@@ -20,11 +20,11 @@ entity ClippingEffect is
 
     generic(
         -- Width of the input sample
-        SAMPLE_WIDTH : Positive range 2 to 32;
+        SAMPLE_WIDTH : Positive range 2 to Positive'high;
         -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive range 2 to 31;
+        GAIN_WIDTH : Positive range 2 to Positive'high;
         -- Index of the 2's power that the multiplication's result is divided by before saturation
-        TWO_POW_DIV : Natural range 0 to 31
+        TWO_POW_DIV : Natural range 0 to Positive'high
     );
     port(
 
@@ -68,28 +68,27 @@ architecture logic of ClippingEffect is
     signal sample_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
     -- Gain value buffer
     signal gain_buf : Signed(GAIN_WIDTH downto 0);
+    -- Saturation value buffer
+    signal high_saturation_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
+    signal low_saturation_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
+    
     -- Internal result of multiplying
     signal result : Signed(SAMPLE_WIDTH + GAIN_WIDTH - TWO_POW_DIV downto 0);
 
 begin
 
-    -- Assert that gain's width is smaller than sample's width
-    assert (SAMPLE_WIDTH > GAIN_WIDTH)
+    -- Assert that gain's result is wide anough to not get zeroed when shifted left
+    assert (SAMPLE_WIDTH + GAIN_WIDTH > TWO_POW_DIV)
         report 
-            "[ClippingEffect] Sample's width must be bigger than gain's width"
+            "[ClippingEffect] Sample's width of the gain's result must be bigger TWO_POW_DIV parameter." &
+            "Otherwise module's output will be constant zero"
     severity error;
 
-    -- Assert that sample's width is higher than number of bits shifted on division step
-    assert (SAMPLE_WIDTH > TWO_POW_DIV)
-        report 
-            "[ClippingEffect] Sample's width must be bigger TWO_POW_DIV parameter"
-    severity error;
-
-    -- Assert that gain's width is higher than number of bits shifted on division
+    -- Assert that gain's range is higher than number of bits shifted on division
     assert (GAIN_WIDTH > TWO_POW_DIV)
         report 
-            "[ClippingEffect] Gain's width must be bigger TWO_POW_DIV parameter"
-    severity error;
+            "[ClippingEffect] Gain's range is smalled than divisison factor. Effective gain will be less than 1!"
+    severity warning;
 
     -- =================================================================================
     -- Internal components
@@ -123,11 +122,6 @@ begin
         -- Actual stage
         variable state : Stage;
 
-        -- High limi for the output value
-        variable high_limit : Signed(SAMPLE_WIDTH - 1 downto 0);
-        -- Low limit for the output value
-        variable low_limit : Signed(SAMPLE_WIDTH - 1 downto 0);
-
     begin
 
         -- Reset condition
@@ -139,8 +133,8 @@ begin
             -- Reset internal buffers
             sample_buf <= (others => '0');
             gain_buf <= (others => '0');
-            high_limit := (others => '0');
-            low_limit := (others => '0');
+            high_saturation_buf <= (others => '0');
+            low_saturation_buf <= (others => '0');
             -- Reset state
             state := IDLE_ST;
 
@@ -162,13 +156,11 @@ begin
                         -- Check fi new sample arrived
                         if(new_sample = '1') then
 
-                            -- Fetch sample
-                            sample_buf <= sample_in;
-                            -- Fetch gain value
-                            gain_buf <= Signed(resize(gain_in, GAIN_WIDTH + 1));
-                            -- Fetch saturation values
-                            high_limit :=  Signed(resize(saturation_in, SAMPLE_WIDTH));
-                            low_limit  := -Signed(resize(saturation_in, SAMPLE_WIDTH));
+                            -- Fetch input vectorssample
+                            sample_buf          <=  sample_in;
+                            gain_buf            <=  Signed(resize(gain_in, GAIN_WIDTH + 1));
+                            high_saturation_buf <=  Signed(resize(saturation_in, SAMPLE_WIDTH));
+                            low_saturation_buf  <= -Signed(resize(saturation_in, SAMPLE_WIDTH));
                             -- Change state
                             state := COMPUTE_ST;
 
@@ -178,11 +170,11 @@ begin
                     when COMPUTE_ST =>
 
                         -- Saturate from top
-                        if(result > resize(high_limit, result'length)) then
-                            sample_out <= high_limit;
+                        if(result > resize(high_saturation_buf, result'length)) then
+                            sample_out <= high_saturation_buf;
                         -- Saturate from bottom
-                        elsif(result < resize(low_limit, result'length)) then
-                            sample_out <= low_limit;
+                        elsif(result < resize(low_saturation_buf, result'length)) then
+                            sample_out <= low_saturation_buf;
                         -- Output without saturation
                         else
                             sample_out <= resize(result, SAMPLE_WIDTH);
