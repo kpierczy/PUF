@@ -32,7 +32,7 @@ package sim is
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Number of system clock's cycles of enable delay efter reset off
-        constant ENABLE_DELAY_CLK : natural;
+        constant ENABLE_DELAY_CLK : Natural := 0;
         -- Clock signal
         signal clk : in std_logic;        
         -- Reset signal
@@ -93,6 +93,8 @@ package sim is
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
         constant FREQUENCY_HZ : Natural;
+        -- Number of system clock's cycles that @in sig should be pulled high
+        constant HIGH_CLK : Natural := 1;        
         -- System reset
         signal reset_n : in std_logic;
         -- System clock
@@ -153,7 +155,7 @@ package body sim is
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
         -- Number of system clock's cycles of enable delay efter reset off
-        constant ENABLE_DELAY_CLK : natural;
+        constant ENABLE_DELAY_CLK : Natural := 0;
         -- Clock signal
         signal clk : in std_logic;
         -- Reset signal
@@ -279,6 +281,8 @@ package body sim is
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
         constant FREQUENCY_HZ : Natural;
+        -- Number of system clock's cycles that @in sig should be pulled high
+        constant HIGH_CLK : Natural := 1;        
         -- System reset
         signal reset_n : in std_logic;
         -- System clock
@@ -286,34 +290,42 @@ package body sim is
         -- Output wave
         signal wave : out std_logic
     ) is
-
-        -- Peiord of the system clock
-        constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;      
-
     begin
 
         -- Reset condition
         wave <= '0';
 
-        -- Wait for end of reset
-        wait until reset_n = '1';
+        -- If freequency is zero
+        if(FREQUENCY_HZ = 0) then
 
-        -- Update `wave` in predefined sequence
-        loop
+            wait;
 
-            -- Wait for rising edge
-            wait until rising_edge(clk);
+        -- If non-zero frequency given
+        else
 
-            -- Inform about new sample
-            wave <= '1';
-            -- Wait a cycle to pull `vali_in` low
-            wait for CLK_PERIOD;
-            wave <= '0';
+            -- Wait for end of reset
+            wait until reset_n = '1';
 
-            -- Wait a gap time before triggering the next cycle
-            wait for 1 sec / FREQUENCY_HZ - CLK_PERIOD;
+            -- Update `wave` in predefined sequence
+            loop
 
-        end loop;
+                -- Wait for rising edge
+                wait until rising_edge(clk);
+
+                -- Inform about new sample
+                wave <= '1';
+                -- Waif given number of cycles to pull signal low
+                for i in 0 to Natural(HIGH_CLK) - 1 loop
+                    wait until rising_edge(clk);
+                end loop;
+                wave <= '0';
+
+                -- Wait a gap time before triggering the next cycle
+                wait for 1 sec / FREQUENCY_HZ - 1 sec / SYS_CLK_HZ;
+
+            end loop;
+
+        end if;
 
     end procedure;
 
@@ -334,8 +346,6 @@ package body sim is
         -- Output wave
         signal wave : out Real
     ) is
-        -- Peiord of the system clock
-        constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ; 
     begin
 
         -- Reset condition
@@ -349,7 +359,7 @@ package body sim is
             loop
                 wait until falling_edge(clk);
                 wave <= rand_real(MIN_VAL, MAX_VAL);
-                wait for CLK_PERIOD * (SYS_CLK_HZ / FREQUENCY_HZ);
+                wait for 1 sec / FREQUENCY_HZ;
             end loop;
         else
             wave <= MAX_VAL;

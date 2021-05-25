@@ -243,7 +243,7 @@ architecture logic of TremoloEffect is
     -- Internal result of modulation
     signal result : Signed(SAMPLE_WIDTH - 1 downto 0);    
     
-    -- ======================== Signals for the internal LFO ======================== --
+    -- =============================== Input buffers ================================ --
 
     -- Input sample buffer
     signal sample_buf : Signed(SAMPLE_WIDTH - 1 downto 0);

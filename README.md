@@ -12,9 +12,8 @@ At the moment the processing core is interfaced via UART port for simplicity dur
 
 # To do
 
-1. Extend **tremolo** module with *depth* parameter
-2. Implement **tremolo** module with sinusoidally changing modulation's frequency
-3. Implement **delay** module
+1. Implement **tremolo** module with sinusoidally changing modulation's frequency
+2. Implement **delay** module
 3. Implement **chorus** module
 
 # Version informations

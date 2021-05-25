@@ -48,3 +48,19 @@
     * Rest options: `Disabled`
 3. Other Options:
     - Load Init File: `Enabled`
+
+# DelayLineTbBram
+
+1. Basic:
+    - Interface type: `Native`
+    - Memory type: `Single Port RAM`
+2. Port A Options:
+    - Read/Write Width: `16`
+    - Read/Write Depth: `128`
+    - Operating Mode: `No change`
+    - Core Output Register: `Enabled`
+    - RSTA Pin (set/reset pin): `Enabled`
+    - Enable port type: `Use ENA Pin`
+    * Rest options: `Disabled`
+3. Other Options:
+    - Load Init File: `Disabled`

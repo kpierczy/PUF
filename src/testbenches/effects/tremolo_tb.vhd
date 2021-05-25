@@ -55,11 +55,6 @@ entity TremoloEffectTb is
         
         -- ===================== Input signal's parameters ====================== --
 
-        -- -------------------------------------------------------------------------
-        -- @Note: Stimulus signals for effect's parameters are generated as random 
-        --    steps with given frequency and amplitude.
-        -- -------------------------------------------------------------------------
-
         -- Type of the input wave (available: [sin])
         INPUT_TYPE : String := "sin";
 
