@@ -4,7 +4,7 @@
 -- @ Modified time: 2021-05-19 18:40:34
 -- @ Description: 
 --    
---    Tremolo effect's testbench 
+--    Delay effect's testbench 
 --    
 -- ===================================================================================================================================
 
@@ -13,12 +13,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
-use work.tremolo.all;
 use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity TremoloEffectTb is
+entity DelayEffectTb is
     generic(
         -- System clock frequency
         SYS_CLK_HZ : Positive := 200_000_000;        
@@ -30,75 +29,61 @@ entity TremoloEffectTb is
         -- Width of the input sample
         SAMPLE_WIDTH : Positive := 16;
 
-        -- ====================== Effect generator's type ======================= --
+        -- Width of the @in attenuation_in port
+        ATTENUATION_WIDTH : Positive := 8;
+        -- Width of the @in depth port
+        DEPTH_WIDTH : Positive := 8;
 
-        -- Generator type
-        GENERATOR_TYPE : Generator := TRIANGLE;
-
-        -- ====================== Modulation's parameters ======================= --
-
-        -- Width of the modulation wave's depth input
-        MODULATION_DEPTH_WIDTH : Positive := 16;
-        -- Width of the modulating sample
-        MODULATION_SAMPLE_WIDTH : Positive := 8;
-        -- Width of the `ticks_per_sample` input
-        MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive := 16;
-
-        -- ==================== QuadrupletGenerator-specific ==================== --
+        -- =========================== BRAM parameters ========================== --
 
         -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-        BRAM_SAMPLES_NUM : Positive := 129;
+        BRAM_SAMPLES_NUM : Positive := 100;
         -- Width of the address port
-        BRAM_ADDR_WIDTH : Positive := 8;
+        BRAM_ADDR_WIDTH : Positive := 16;
         -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
         BRAM_LATENCY : Positive := 2;
         
         -- ===================== Input signal's parameters ====================== --
 
-        -- Type of the input wave (available: [sin])
-        INPUT_TYPE : String := "sin";
+        -- Type of the input wave (available: [sin/sin_rand])
+        INPUT_TYPE : String := "sin_rand";
 
         -- Frequency of the input signal 
         INPUT_FREQ_HZ : Positive := 1000;
         -- Amplitude of the input wave in normalized range <0; 1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
+
+        -- Limits of the uniform random summant of the input signal
+        INPUT_MIN_RAND : Real := 0;
+        INPUT_MAX_RAND : Real := 0;
 
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 0;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 50;
         -- Number of system clock's cycles that the `enable_in` port is held low
         CYCLIC_DISABLE_CLK : Positive := 1;
 
         -- ================ Effect parameters' stimulus signals ================= --
 
-        -- -------------------------------------------------------------------------
-        -- @Note: Stimulus signals for effect's parameters are generated as random 
-        --    steps with given frequency and amplitude.
-        -- -------------------------------------------------------------------------
-
-        -- Additional argument used to automatically calculate MODULATION_TICKS_PER_SAMPLE_AMPLITUDE
-        -- for the given modulation frequency (MODULATION_TICKS_PER_SAMPLE_AMPLITUDE used when < 0)
-        MODULATION_FREQ_HZ_AMPLITUDE : Integer := 50;
-
-        -- Amplitudes of `depth_in` input's values in normalized range <0; 1>
-        MODULATION_DEPTH_AMPLITUDE : Real := 0.5;
+        -- Amplitudes of `depth_in` input's values in normalized range <0; 1> ('1.0' is (BRAM_SAMPLES_NUM - 1))
+        DEPTH_AMPLITUDE : Real := 0.25;
         -- Frequency of the changes of `depth_in` input
-        MODULATION_TOGGLE_DEPTH_FREQ_HZ : Natural := 0;
+        DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
 
-        -- Amplitudes of `modulation_ticks_per_sample_in` input's values in normalized range <0; 1>
-        MODULATION_TICKS_PER_SAMPLE_AMPLITUDE : Real := 0.0;
-        -- Frequency of the changes of `modulation_ticks_per_sample_in` input
-        MODULATION_TOGGLE_TICKS_PER_SAMPLE_FREQ_HZ : Natural := 0
+        -- Amplitudes of `attenuation_in` input's values in normalized range <0; 1>
+        ATTENUATION_AMPLITUDE : Real := 1.0;
+        -- Frequency of the changes of `attenuation_in` input
+        ATTENUATION_TOGGLE_FREQ_HZ : Natural := 0
 
     );
-end entity TremoloEffectTb;
+end entity DelayEffectTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of TremoloEffectTb is
+architecture logic of DelayEffectTb is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
@@ -121,44 +106,19 @@ architecture logic of TremoloEffectTb is
     
     -- ================= Specific effects's interface ================= --
 
-    -- Tremolo's depth aprameter (treated as value in <0, 1) range)
-    signal depth_in : Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);  
-    -- Module's saturation
-    signal ticks_per_modulation_sample_in : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
+    -- Depth level (index of the delayed sample being summed with the input)
+    signal depth_in : unsigned(DEPTH_WIDTH - 1 downto 0);
+    -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
+    signal attenuation_in : unsigned(ATTENUATION_WIDTH - 1 downto 0);
 
     -- ====================== Auxiliary signals ====================== --
 
     -- Real-converted input signal
     signal sample_tmp : Real;
-    -- Real-converted input signal
+    -- Real-converted depth input value
     signal depth_tmp : Real;
-    -- Real-converted input signal
-    signal ticks_per_modulation_sample_tmp : Real;
-
-    -- ===================== Auxiliary functions ===================== --
-
-    -- Chooses actual value of the MODULATION_TICKS_PER_SAMPLE_AMPLITUDE
-    impure function calculate_ticks_per_sample_amplitude return Real is
-    begin
-        -- If modulation signal is NOT given with the particulat frequency
-        if(MODULATION_FREQ_HZ_AMPLITUDE < 0) then
-            return Real(Integer(MODULATION_TICKS_PER_SAMPLE_AMPLITUDE * (2**MODULATION_TICKS_PER_SAMPLE_WIDTH - 1)));
-        -- Else
-        else
-            -- If triangle generator used
-            if(GENERATOR_TYPE = TRIANGLE) then
-                return Real(Integer(
-                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / 2**(MODULATION_SAMPLE_WIDTH + 1)));
-            -- If quadruplet generator used
-            else
-                return Real(Integer(
-                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / (BRAM_SAMPLES_NUM * 4  - 4)));
-            end if;
-        end if;
-    end function;
-
-    -- Amplitudes of `modulation_ticks_per_sample_in` input's values in normalized range <0; 1>
-    constant ACTUAL_MODULATION_TICKS_PER_SAMPLE_AMPLITUDE : Real := calculate_ticks_per_sample_amplitude;
+    -- Real-converted attenuation input value
+    signal attenuation_tmp : Real;
 
 begin
     
@@ -178,29 +138,27 @@ begin
     
     -- Control `enable_in` signal with it's negation
     enable_in <= not(disable_in);
-
+    
     -- Instance of the tremolo effect's module
-    tremoloEffectInstance: entity work.TremoloEffect
+    delayEffectInstance : entity work.DelayEffect
     generic map (
-        GENERATOR_TYPE                    => GENERATOR_TYPE,
-        SAMPLE_WIDTH                      => SAMPLE_WIDTH,
-        MODULATION_SAMPLE_WIDTH           => MODULATION_SAMPLE_WIDTH,
-        MODULATION_DEPTH_WIDTH            => MODULATION_DEPTH_WIDTH,
-        MODULATION_TICKS_PER_SAMPLE_WIDTH => MODULATION_TICKS_PER_SAMPLE_WIDTH,
-        BRAM_SAMPLES_NUM                  => BRAM_SAMPLES_NUM,
-        BRAM_ADDR_WIDTH                   => BRAM_ADDR_WIDTH,
-        BRAM_LATENCY                      => BRAM_LATENCY
+        SAMPLE_WIDTH      => SAMPLE_WIDTH,
+        ATTENUATION_WIDTH => ATTENUATION_WIDTH,
+        DEPTH_WIDTH       => DEPTH_WIDTH,
+        BRAM_SAMPLES_NUM  => BRAM_SAMPLES_NUM,
+        BRAM_ADDR_WIDTH   => BRAM_ADDR_WIDTH,
+        BRAM_LATENCY      => BRAM_LATENCY
     )
     port map (
-        reset_n                        => reset_n,
-        clk                            => clk,
-        enable_in                      => enable_in,
-        valid_in                       => valid_in,
-        valid_out                      => valid_out,
-        sample_in                      => sample_in,
-        sample_out                     => sample_out,
-        depth_in                       => depth_in,
-        ticks_per_modulation_sample_in => ticks_per_modulation_sample_in
+        reset_n        => reset_n,
+        clk            => clk,
+        enable_in      => enable_in,
+        valid_in       => valid_in,
+        valid_out      => valid_out,
+        sample_in      => sample_in,
+        sample_out     => sample_out,
+        depth_in       => depth_in,
+        attenuation_in => attenuation_in
     );
 
     -- =================================================================================
@@ -222,28 +180,45 @@ begin
         );
     end generate;
 
-    -- Generate `depth` signal
-    depth_in <= to_unsigned(Natural(depth_tmp), MODULATION_DEPTH_WIDTH);
+    -- Generate input signal : sin with uniform noise
+    inputSin : if INPUT_TYPE = "sin_rand" generate
+        sample_in <= to_signed(integer(sample_tmp), SAMPLE_WIDTH);
+        generate_random_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            LOW_RAND     => INPUT_MIN_RAND,
+            HIGH_RAND    => INPUT_MAX_RAND,
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
+        );
+    end generate;
+
+    -- Generate `depth_in` signal
+    depth_in <= to_unsigned(Natural(depth_tmp), DEPTH_WIDTH);
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => MODULATION_TOGGLE_DEPTH_FREQ_HZ,
+        FREQUENCY_HZ => DEPTH_TOGGLE_FREQ_HZ,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(MODULATION_DEPTH_AMPLITUDE * (2**MODULATION_DEPTH_WIDTH - 1))),
+        MAX_VAL      => Real(Integer(DEPTH_AMPLITUDE * (BRAM_SAMPLES_NUM - 1))),
         reset_n      => reset_n,
         clk          => clk,
         wave         => depth_tmp
     );
 
-    -- Generate `modulation_ticks_per_sample_in signal
-    ticks_per_modulation_sample_in <= to_unsigned(Natural(ticks_per_modulation_sample_tmp), MODULATION_TICKS_PER_SAMPLE_WIDTH);
+    -- Generate `attenuation_in` signal
+    attenuation_in <= to_unsigned(Natural(attenuation_tmp), ATTENUATION_WIDTH);
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => MODULATION_TOGGLE_TICKS_PER_SAMPLE_FREQ_HZ,
+        FREQUENCY_HZ => ATTENUATION_TOGGLE_FREQ_HZ,
         MIN_VAL      => 0.0,
-        MAX_VAL      => ACTUAL_MODULATION_TICKS_PER_SAMPLE_AMPLITUDE,
+        MAX_VAL      => Real(Integer(ATTENUATION_AMPLITUDE * (2**ATTENUATION_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => ticks_per_modulation_sample_tmp
+        wave         => attenuation_tmp
     );    
 
     -- =================================================================================

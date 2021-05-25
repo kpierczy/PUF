@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="DelayEffectTb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="DelayEffectTb" />
+            <top_module name="edge" />
+            <top_module name="glbl" />
+            <top_module name="sim" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="248200001fs"></ZoomEndTime>
+      <Cursor1Time time="20065000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="262"></NameColumnWidth>
+      <ValueColumnWidth column_width="66"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="14" />
+   <wvobject type="logic" fp_name="/DelayEffectTb/reset_n">
+      <obj_property name="ElementShortName">reset_n</obj_property>
+      <obj_property name="ObjectShortName">reset_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/DelayEffectTb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider713" type="divider">
+      <obj_property name="label">Samples</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/DelayEffectTb/sample_in">
+      <obj_property name="ElementShortName">sample_in[15:0]</obj_property>
+      <obj_property name="ObjectShortName">sample_in[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      <obj_property name="CellHeight">100</obj_property>
+      <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+      <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+      <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+      <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+      <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+      <obj_property name="AnalogHorizLine">0.000000</obj_property>
+      <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/DelayEffectTb/sample_out">
+      <obj_property name="ElementShortName">sample_out[15:0]</obj_property>
+      <obj_property name="ObjectShortName">sample_out[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      <obj_property name="CellHeight">100</obj_property>
+      <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+      <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+      <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+      <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+      <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+      <obj_property name="AnalogHorizLine">0.000000</obj_property>
+      <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider715" type="divider">
+      <obj_property name="label">Parameters</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/DelayEffectTb/attenuation_in">
+      <obj_property name="ElementShortName">attenuation_in[7:0]</obj_property>
+      <obj_property name="ObjectShortName">attenuation_in[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/DelayEffectTb/depth_in">
+      <obj_property name="ElementShortName">depth_in[7:0]</obj_property>
+      <obj_property name="ObjectShortName">depth_in[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider714" type="divider">
+      <obj_property name="label">Flags</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/DelayEffectTb/enable_in">
+      <obj_property name="ElementShortName">enable_in</obj_property>
+      <obj_property name="ObjectShortName">enable_in</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/DelayEffectTb/valid_in">
+      <obj_property name="ElementShortName">valid_in</obj_property>
+      <obj_property name="ObjectShortName">valid_in</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/DelayEffectTb/valid_out">
+      <obj_property name="ElementShortName">valid_out</obj_property>
+      <obj_property name="ObjectShortName">valid_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider752" type="divider">
+      <obj_property name="label">Debug</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group757">
+      <obj_property name="label">Debug</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/sample_in_buf">
+         <obj_property name="ElementShortName">sample_in_buf[15:0]</obj_property>
+         <obj_property name="ObjectShortName">sample_in_buf[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delay_data_out">
+         <obj_property name="ElementShortName">delay_data_out[15:0]</obj_property>
+         <obj_property name="ObjectShortName">delay_data_out[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/result">
+         <obj_property name="ElementShortName">result[15:0]</obj_property>
+         <obj_property name="ObjectShortName">result[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/sample_out_buf">
+         <obj_property name="ElementShortName">sample_out_buf[15:0]</obj_property>
+         <obj_property name="ObjectShortName">sample_out_buf[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/depth_buf">
+         <obj_property name="ElementShortName">depth_buf[7:0]</obj_property>
+         <obj_property name="ObjectShortName">depth_buf[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delay_delay_in">
+         <obj_property name="ElementShortName">delay_delay_in[7:0]</obj_property>
+         <obj_property name="ObjectShortName">delay_delay_in[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delayLineInstance/bufferred_samples_num">
+         <obj_property name="ElementShortName">bufferred_samples_num[16:0]</obj_property>
+         <obj_property name="ObjectShortName">bufferred_samples_num[16:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delayLineInstance/data_buf">
+         <obj_property name="ElementShortName">data_buf[15:0]</obj_property>
+         <obj_property name="ObjectShortName">data_buf[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delayLineInstance/bram_data_in">
+         <obj_property name="ElementShortName">bram_data_in[15:0]</obj_property>
+         <obj_property name="ObjectShortName">bram_data_in[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/DelayEffectTb/delayEffectInstance/delayLineInstance/bram_data_out">
+         <obj_property name="ElementShortName">bram_data_out[15:0]</obj_property>
+         <obj_property name="ObjectShortName">bram_data_out[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

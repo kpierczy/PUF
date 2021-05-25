@@ -51,14 +51,14 @@ entity DelayLineTb is
         -- @Note: Reset signal on the simulated module can be raised periodically
         --    to check how it's output behaves in such condition. The signal is 
         --    generated as periodically triggerred low state lasting as many cycle
-        --    as given in the PERIODIC_RESET_CYCLES. If PERIODIC_RESET_FREQ_HZ
+        --    as given in the CYCLIC_RESET_CLK. If CYCLIC_RESET_FREQ_HZ
         --    is equal to 0, no periodic reset is performed.
         -- -------------------------------------------------------------------------
 
         -- Number of reset cycles
-        PERIODIC_RESET_CYCLES : Positive := 2;
+        CYCLIC_RESET_CLK : Positive := 2;
         -- Frequency of the input signal 
-        PERIODIC_RESET_FREQ_HZ : Natural := 50;        
+        CYCLIC_RESET_FREQ_HZ : Natural := 50;        
 
         -- ===================== Input signal's parameters ====================== --
 
@@ -79,8 +79,8 @@ entity DelayLineTb is
         --    steps with given frequency and amplitude.
         -- -------------------------------------------------------------------------
 
-        -- Amplitudes of `delay_in` input's values in normalized range <0; 1>
-        DELAY_AMPLITUDE : Real := 0.25;
+        -- Amplitudes of `delay_in` input's values in normalized range <0; 1> where '1' is (BRAM_SAMPLES_NUM - 1)
+        DELAY_AMPLITUDE : Real := 0.5;
         -- Frequency of the changes of `depth_in` input
         DELAY_TOGGLE_FREQ_HZ : Natural := 0
     );
@@ -234,7 +234,7 @@ begin
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => DELAY_TOGGLE_FREQ_HZ,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(DELAY_AMPLITUDE * BRAM_SAMPLES_NUM)),
+        MAX_VAL      => Real(Integer(DELAY_AMPLITUDE * (BRAM_SAMPLES_NUM - 1))),
         reset_n      => reset_n,
         clk          => clk,
         wave         => delay_tmp
@@ -256,8 +256,8 @@ begin
     -- Generate cyclic reset signal
     generate_clk(
         SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => PERIODIC_RESET_FREQ_HZ,
-        HIGH_CLK         => PERIODIC_RESET_CYCLES,
+        FREQUENCY_HZ     => CYCLIC_RESET_FREQ_HZ,
+        HIGH_CLK         => CYCLIC_RESET_CLK,
         reset_n          => reset_n,
         clk              => clk,
         wave             => manual_module_reset_n

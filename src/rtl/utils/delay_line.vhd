@@ -9,6 +9,8 @@
 -- @ Note: The delay line (optionally) implemets `soft start` mechanism. When it is used the output is hold zeroed if requested delay
 --     is higher than the number of already bufferred samples. This can be used to reduce starting noise in the sound effects 
 --     resulting from using uninitialized cells of the BRAM as valid samples.
+-- @ Note: If `delay_in` is larger than actual number of samples possible to hold in BRAM the actual value of delay is (obviously)
+--     limited.
 -- ===================================================================================================================================
 
 library ieee;
@@ -84,15 +86,19 @@ architecture logic of DelayLine is
 begin
 
     -- Assert that delay level's width is not bigger than BRAM's adress port
-    assert (DELAY_WIDTH >= BRAM_ADDR_WIDTH)
+    assert (DELAY_WIDTH <= BRAM_ADDR_WIDTH)
         report 
-            "[DelayLine] Delay input cannot be wider than BRAM address port!"
+            "[DelayLine] Delay input cannot be wider than BRAM address port! (" &
+            "DELAY_WIDTH: " & Positive'Image(DELAY_WIDTH) & ", " &
+            "BRAM_ADDR_WIDTH: " & Positive'Image(BRAM_ADDR_WIDTH) & ")"
     severity error;
 
     -- Assert that number of BRAM cell's used is addressable
     assert (BRAM_SAMPLES_NUM <= 2**BRAM_ADDR_WIDTH)
         report 
-            "[DelayLine] BRAM address port is too narrow to address all cells!"
+            "[DelayLine] BRAM address port is too narrow to address all cells!" &
+            "BRAM_SAMPLES_NUM: " & Positive'Image(BRAM_SAMPLES_NUM) & ", " &
+            "BRAM_ADDR_WIDTH: " & Positive'Image(BRAM_ADDR_WIDTH) & ")"            
     severity error;
 
     -- =================================================================================
@@ -177,32 +183,26 @@ begin
                     -- Disable writing line of the BRAM
                     bram_wen_out <= (others => '0');
 
-                    -- Increment address of the next cell to write
-                    if(next_addr < to_unsigned(Natural(BRAM_SAMPLES_NUM) - 1, BRAM_ADDR_WIDTH)) then
-                        next_addr <= next_addr + 1;
+                    -- Limit delay to the max number of samples hold in the BRAM
+                    if(resize(delay_buf, BRAM_ADDR_WIDTH + 1) >= to_unsigned(Natural(BRAM_SAMPLES_NUM), BRAM_ADDR_WIDTH + 1)) then
+                        actual_delay := to_unsigned(Natural(BRAM_SAMPLES_NUM) - 1, BRAM_ADDR_WIDTH);
                     else
-                        next_addr <= to_unsigned(0, BRAM_ADDR_WIDTH);
+                        actual_delay := delay_buf;
                     end if;
 
                     -- Check whether `soft start` is used
                     if(SOFT_START) then
-
-                        -- Increment number of already bufferred samples
-                        if(bufferred_samples_num < to_unsigned(Natural(BRAM_SAMPLES_NUM), BRAM_ADDR_WIDTH + 1)) then
-                            bufferred_samples_num <= bufferred_samples_num + 1;
-                        end if;
                         
                         -- Check whether given delay does not excceeds number of already bufffered samples
-                        if(resize(delay_buf, BRAM_ADDR_WIDTH + 1) < bufferred_samples_num) then
-                            actual_delay := delay_buf;
-                        -- Else, mark that the '0' output should be produced
-                        else
+                        if(resize(actual_delay, BRAM_ADDR_WIDTH + 1) >= bufferred_samples_num) then
                             zero_out := '1';
                         end if;
 
-                    -- If no `soft start` used, just use given delay
-                    else
-                        actual_delay := delay_buf;
+                        -- Increment number of already bufferred samples if BRAM was not filled yet
+                        if(bufferred_samples_num < to_unsigned(Natural(BRAM_SAMPLES_NUM), BRAM_ADDR_WIDTH + 1)) then
+                            bufferred_samples_num <= bufferred_samples_num + 1;
+                        end if;
+
                     end if;
 
                     -- Check whether '0' output should be produced
@@ -253,6 +253,13 @@ begin
 
                         end if;
 
+                    end if;
+
+                    -- Increment address of the next cell to write
+                    if(next_addr < to_unsigned(Natural(BRAM_SAMPLES_NUM) - 1, BRAM_ADDR_WIDTH)) then
+                        next_addr <= next_addr + 1;
+                    else
+                        next_addr <= to_unsigned(0, BRAM_ADDR_WIDTH);
                     end if;
 
                 -- Reading data from the BRAM

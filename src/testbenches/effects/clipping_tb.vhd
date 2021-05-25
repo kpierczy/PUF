@@ -54,6 +54,13 @@ entity ClippingEffectTb is
         -- Sampling frequency of the input signal
         INPUT_SAMPLING_FREQ_HZ : Positive := 44100;
 
+        -- ==================== Enable signal's parameters ====================== --
+
+        -- Frequency of pulling down the `enable_in` input port (disabled when 0)
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 0;
+        -- Number of system clock's cycles that the `enable_in` port is held low
+        CYCLIC_DISABLE_CLK : Positive := 1;
+
         -- ================ Effect parameters' stimulus signals ================= --
 
         -- -------------------------------------------------------------------------
@@ -88,8 +95,8 @@ architecture logic of ClippingEffectTb is
 
     -- ================== Common effects's interface ================== --
 
-    -- Module's enable signal
-    signal enable_in : Std_logic := '1';
+    -- Module's enable signal and it's negation
+    signal enable_in, disable_in : Std_logic := '1';
     -- Input and output samples
     signal sample_in, sample_out : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
 
@@ -129,6 +136,9 @@ begin
     -- =================================================================================
     -- Module's instance
     -- =================================================================================
+
+    -- Control `enable_in` signal with it's negation
+    enable_in <= not(disable_in);
 
     -- Instance of the clipping effect's module
     clippingEffectInstance : entity work.ClippingEffect(logic)
@@ -196,14 +206,15 @@ begin
     -- Input signal's sampling process
     -- =================================================================================
 
-    -- Enable `enable_in` signal on end of reset
-    enable_on_end_of_reset(
+    -- Generate cyclic reset signal
+    generate_clk(
         SYS_CLK_HZ       => SYS_CLK_HZ,
-        ENABLE_DELAY_CLK => 0,
-        clk              => clk,
+        FREQUENCY_HZ     => CYCLIC_DISABLE_FREQ_HZ,
+        HIGH_CLK         => CYCLIC_DISABLE_CLK,
         reset_n          => reset_n,
-        sig              => enable_in
-    );
+        clk              => clk,
+        wave             => disable_in
+    );   
 
     -- Generate sampling pulse 
     generate_clk(

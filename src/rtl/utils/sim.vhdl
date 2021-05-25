@@ -67,6 +67,30 @@ package sim is
     -- Wave generators
     -- ===================================================================
 
+    -- Generates sine wave summed with the uniform noised from the given range
+    procedure generate_random_sin(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift (in normalized range (0;1>)
+        constant PHASE_SHIFT : Real;
+        -- Wave's amplitude
+        constant AMPLITUDE : Real;
+        -- Wave's offset
+        constant OFFSET : Real;
+        -- Lower bound of the random summant
+        constant LOW_RAND : Real := 0.0;
+        -- Higher bound of the random summant
+        constant HIGH_RAND : Real := 0.0;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal wave : out Real
+    );
+
     -- Generates sine wave updating samples at rising edge of the clock
     procedure generate_sin(
         -- System clock's frequency
@@ -270,6 +294,51 @@ package body sim is
         loop
             ticks := ticks + 1;
             wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
+            wait for CLK_PERIOD;
+        end loop;
+
+    end procedure;
+
+    -- Generates sine wave summed with the uniform noised from the given range
+    procedure generate_random_sin(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift (in normalized range (0;1>)
+        constant PHASE_SHIFT : Real;
+        -- Wave's amplitude
+        constant AMPLITUDE : Real;
+        -- Wave's offset
+        constant OFFSET : Real;
+        -- Lower bound of the random summant
+        constant LOW_RAND : Real := 0.0;
+        -- Higher bound of the random summant
+        constant HIGH_RAND : Real := 0.0;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal wave : out Real
+    ) is
+        -- Peiord of the system clock
+        constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ; 
+        -- Counter used to generate sinus wave
+        variable ticks : Natural;
+    begin
+        -- -- Reset condition
+        ticks := 0;
+        wave <= 0.0;
+        -- --Wait for the first rising edge after reset
+        wait until reset_n = '1';
+        wait until rising_edge(clk);
+        -- -- Update wave on rising edges
+        loop
+            ticks := ticks + 1;
+            wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) +
+                    OFFSET + 
+                    rand_real(LOW_RAND, HIGH_RAND);
             wait for CLK_PERIOD;
         end loop;
 

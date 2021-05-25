@@ -12,7 +12,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
-use work.dsp.all;
 use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
@@ -110,7 +109,8 @@ begin
     -- =================================================================================
 
     -- Summation of two unsigned numbers with saturation
-    sumUnsignedSat(
+    sumUnsignedSatInstance : entity work.sumUnsignedSat(logic)
+    port map(
         a_in       => a_unsigned,
         b_in       => b_unsigned,
         result_out => sum_unsigned,
@@ -118,7 +118,8 @@ begin
     );
 
     -- Summation of two signed numbers with saturation
-    sumSignedSat(
+    sumSignedSatInstance : entity work.sumSignedSat(logic)
+    port map(    
         a_in       => a_signed,
         b_in       => b_signed,
         result_out => sum_signed,
@@ -126,8 +127,11 @@ begin
     );
 
     -- Multiplication of two unsigned numbers with saturation
-    mulUnsignedSat(
-        TWO_POW_DIV => TWO_POW_DIV,
+    mulUnsignedSatInstance : entity work.mulUnsignedSat(logic)
+    generic map(
+        TWO_POW_DIV => TWO_POW_DIV
+    )
+    port map(        
         a_in        => a_unsigned,
         b_in        => b_unsigned,
         result_out  => mul_unsigned,
@@ -135,8 +139,11 @@ begin
     );
 
     -- Multiplication of two signed numbers with saturation
-    mulSignedSat(
-        TWO_POW_DIV => TWO_POW_DIV,
+    mulSignedSatInstance : entity work.mulSignedSat(logic)
+    generic map(
+        TWO_POW_DIV => TWO_POW_DIV
+    )
+    port map(
         a_in        => a_signed,
         b_in        => b_signed,
         result_out  => mul_signed,
@@ -196,7 +203,7 @@ begin
             sum_signed_expected_var := a_signed + b_signed;
         end if;
         -- Check if procedure's output is as expected
-        if(sum_unsigned /= sum_signed_expected_var) then
+        if(sum_signed /= sum_signed_expected_var) then
             sum_signed_expected <= (others => 'X');
         else
             sum_signed_expected <= sum_signed_expected_var;
@@ -220,10 +227,10 @@ begin
         if(a_unsigned * b_unsigned / 2**TWO_POW_DIV > resize(MAX_VALUE, RESULT_WIDTH)) then
             mul_unsigned_expected_var := MAX_VALUE;
         else
-            mul_unsigned_expected_var := resize(a_unsigned * b_unsigned, RESULT_WIDTH);
+            mul_unsigned_expected_var := resize(a_unsigned * b_unsigned / 2**TWO_POW_DIV, mul_unsigned_expected_var'length);
         end if;
         -- Check if procedure's output is as expected
-        if(sum_unsigned /= mul_unsigned_expected_var) then
+        if(mul_unsigned /= mul_unsigned_expected_var) then
             mul_unsigned_expected <= (others => 'X');
         else
             mul_unsigned_expected <= mul_unsigned_expected_var;
@@ -248,15 +255,15 @@ begin
         variable mul_signed_expected_var : Signed(RESULT_WIDTH - 1 downto 0);
     begin
         -- Establish expected multiplication's value
-        if(resize(a_signed, RESULT_WIDTH * 2) * resize(b_signed, RESULT_WIDTH * 2) > MAX_VALUE) then
+        if(resize(a_signed, RESULT_WIDTH * 2) * resize(b_signed, RESULT_WIDTH * 2) / 2**TWO_POW_DIV > MAX_VALUE) then
             mul_signed_expected_var := MAX_VALUE;
-        elsif(resize(a_signed, RESULT_WIDTH * 2) * resize(b_signed, RESULT_WIDTH * 2) < MIN_VALUE) then
+        elsif(resize(a_signed, RESULT_WIDTH * 2) * resize(b_signed, RESULT_WIDTH * 2) / 2**TWO_POW_DIV < MIN_VALUE) then
             mul_signed_expected_var := MIN_VALUE;        
         else
-            mul_signed_expected_var := resize(a_signed * b_signed, RESULT_WIDTH);
+            mul_signed_expected_var := resize(a_signed * b_signed / 2**TWO_POW_DIV, mul_signed_expected_var'length);
         end if;
         -- Check if procedure's output is as expected
-        if(sum_unsigned /= mul_signed_expected_var) then
+        if(mul_signed /= mul_signed_expected_var) then
             mul_signed_expected <= (others => 'X');
         else
             mul_signed_expected <= mul_signed_expected_var;

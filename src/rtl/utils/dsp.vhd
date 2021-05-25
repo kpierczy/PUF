@@ -8,93 +8,41 @@
 --    
 -- ===================================================================================================================================
 
+-- ===================================================================================================================================
+-- ------------------------------------------------------- Unsigned Summation --------------------------------------------------------
+-- ===================================================================================================================================
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.std_logic_misc.all;
 
--- ------------------------------------------------------------ Package --------------------------------------------------------------
-
-package dsp is
-
-    -- ===================================================================
-    -- ------------------------ Saturation blocks ------------------------
-    -- ===================================================================
-
-    -- Summation of two unsigned numbers with saturation
-    procedure sumUnsignedSat(
+entity sumUnsignedSat is
+    port(
         -- Inputs
-        signal a_in, b_in : in  Unsigned;
+        a_in, b_in : in  Unsigned;
         -- Output
-        signal result_out : out Unsigned;
+        result_out : out Unsigned;
         -- Error flag (overflow)
-        signal err_out : out Std_logic
+        err_out : out Std_logic
     );
+end entity;
 
-    -- Summation of two signed numbers with saturation
-    procedure sumSignedSat(
-        -- Inputs
-        signal a_in, b_in : in  Signed;
-        -- Output
-        signal result_out : out Signed;
-        -- Error flag (overflow)
-        signal err_out : out Std_logic
-    );
+architecture logic of sumUnsignedSat is
 
-    -- Multiplication of two unsigned numbers with saturation
-    procedure mulUnsignedSat( 
-        -- Number of bits to be shifted right after multiplication
-        constant TWO_POW_DIV : in Natural := 0;
-        -- Inputs
-        signal a_in, b_in : in  Unsigned;
-        -- Output
-        signal result_out : out Unsigned;
-        -- Error flag (overflow)
-        signal err_out : out Std_logic
-    );
+    -- Max unsigned value with DATA_WIDTH bits
+    constant MAX_VALUE : Unsigned(result_out'length - 1 downto 0) := (others => '1');
 
-    -- Multiplication of two signed numbers with saturation
-    procedure mulSignedSat(
-        -- Number of bits to be shifted right after multiplication
-        constant TWO_POW_DIV : in Natural := 0;
-        -- Inputs
-        signal a_in, b_in : in  Signed;
-        -- Output
-        signal result_out : out Signed;
-        -- Error flag (overflow)
-        signal err_out : out Std_logic
-    );
+    -- Result of the summation
+    signal result : Unsigned(maximum(a_in'length, b_in'length) downto 0);
 
-end package dsp;
+begin
 
--- -------------------------------------------------------------- Body ---------------------------------------------------------------
+    -- Sum inputs
+    result <= resize(a_in, result'length) + resize(b_in, result'length);
 
-package body dsp is
-
-    -- =====================================================================
-    -- ----------------------------- Summation -----------------------------
-    -- =====================================================================
-
-    -- Summation of two unsigned numbers with saturation
-    procedure sumUnsignedSat(
-        -- Inputs
-        signal a_in, b_in : in  Unsigned;
-        -- Output
-        signal result_out : out Unsigned;
-        -- Error flag (overflow)
-        signal err_out : out Std_logic
-    ) is
-
-        -- Max unsigned value with DATA_WIDTH bits
-        constant MAX_VALUE : Unsigned(result_out'length - 1 downto 0) := (others => '1');
-
-        -- Result of the summation
-        variable result : Unsigned(maximum(a_in'length, b_in'length) downto 0);
-
+    -- Saturation logic
+    process(result) is
     begin
-
-        -- Sum inputs
-        result := resize(a_in, result'length) + resize(b_in, result'length);
 
         -- If output is able to hold any result of summation
         if (result_out'length >= result'length) then
@@ -122,33 +70,49 @@ package body dsp is
 
         end if;
 
-    end procedure;
+    end process;
 
+end architecture logic;
 
-    -- Summation of two signed numbers with saturation
-    procedure sumSignedSat(
+-- ===================================================================================================================================
+-- -------------------------------------------------------- Signed Summation ---------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity sumSignedSat is
+    port(
         -- Inputs
-        signal a_in, b_in : in  Signed;
+        a_in, b_in : in  Signed;
         -- Output
-        signal result_out : out Signed;
+        result_out : out Signed;
         -- Error flag (overflow)
-        signal err_out : out Std_logic
-    ) is
+        err_out : out Std_logic
+    );
+end entity sumSignedSat;
 
-        -- Max signed value with DATA_WIDTH bits
-        constant MAX_VALUE : Signed(result_out'length - 1 downto 0) :=
-            (result_out'length - 1 => '0', others => '1');
-        -- Min signed value with DATA_WIDTH bits
-        constant MIN_VALUE : Signed(result_out'length - 1 downto 0) :=
-            (result_out'length - 1 => '1', others => '0');
+architecture logic of sumSignedSat is
 
-        -- Result of the summation
-        variable result : Signed(maximum(a_in'length, b_in'length) downto 0);
+    -- Max signed value with DATA_WIDTH bits
+    constant MAX_VALUE : Signed(result_out'length - 1 downto 0) :=
+        (result_out'length - 1 => '0', others => '1');
+    -- Min signed value with DATA_WIDTH bits
+    constant MIN_VALUE : Signed(result_out'length - 1 downto 0) :=
+        (result_out'length - 1 => '1', others => '0');
 
+    -- Result of the summation
+    signal result : Signed(maximum(a_in'length, b_in'length) downto 0);
+
+begin
+
+    -- Sum inputs
+    result <= resize(a_in, result'length) + resize(b_in, result'length);
+
+    -- Saturation logic
+    process(result) is
     begin
-
-        -- Sum inputs
-        result := resize(a_in, result'length) + resize(b_in, result'length);
 
         -- If output is able to hold any result of summation
         if (result_out'length >= result'length) then
@@ -183,34 +147,49 @@ package body dsp is
 
         end if;
 
-    end procedure;
+    end process;
 
-    -- -- =====================================================================
-    -- -- --------------------------- Multiplication --------------------------
-    -- -- =====================================================================
+end architecture logic;
 
-    -- Multiplication of two unsigned numbers with saturation
-    procedure mulUnsignedSat(
+-- ===================================================================================================================================
+-- ----------------------------------------------------- Unsigned Multiplication -----------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity mulUnsignedSat is
+    generic(
         -- Number of bits to be shifted right after multiplication
-        constant TWO_POW_DIV : in Natural := 0;
+        TWO_POW_DIV : in Natural := 0
+    );
+    port(
         -- Inputs
-        signal a_in, b_in : in Unsigned;
+        a_in, b_in : in Unsigned;
         -- Output
-        signal result_out : out Unsigned;
+        result_out : out Unsigned;
         -- Error flag (overflow)
-        signal err_out : out Std_logic
-    ) is
+        err_out : out Std_logic
+    );
+end entity mulUnsignedSat;
 
-        -- Max value on output
-        constant MAX_VALUE : Unsigned(result_out'length - 1 downto 0) := (others => '1');
+architecture logic of mulUnsignedSat is
 
-        -- Result of the multiplication
-        variable result : Unsigned(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
+    -- Max value on output
+    constant MAX_VALUE : Unsigned(result_out'length - 1 downto 0) := (others => '1');
 
+    -- Result of the multiplication
+    signal result : Unsigned(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
+
+begin
+
+    -- Multiply inputs
+    result <= resize(a_in * b_in / to_unsigned(Natural(2**TWO_POW_DIV), a_in'length + b_in'length), result'length);
+
+    -- Saturation logic
+    process(result) is
     begin
-
-        -- Multiply inputs
-        result := resize(a_in * b_in / 2**TWO_POW_DIV, result'length);
 
         -- If overflow occurred
         if(result > MAX_VALUE) then
@@ -226,35 +205,53 @@ package body dsp is
             err_out <= '0';
         end if;
 
-    end procedure;
+    end process;
 
+end architecture logic;
 
-    -- Multiplication of two signed numbers with saturation
-    procedure mulSignedSat(
+-- ===================================================================================================================================
+-- ------------------------------------------------------ Signed Multiplication ------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity mulSignedSat is
+    generic(
         -- Number of bits to be shifted right after multiplication
-        constant TWO_POW_DIV : in Natural := 0;
+        TWO_POW_DIV : in Natural := 0
+    );
+    port(
         -- Inputs
-        signal a_in, b_in : in  Signed;
+        a_in, b_in : in  Signed;
         -- Output
-        signal result_out : out Signed;
+        result_out : out Signed;
         -- Error flag (overflow)
-        signal err_out : out Std_logic
-    ) is
+        err_out : out Std_logic
+    );
+end entity mulSignedSat;
 
-        -- Max signed value with DATA_WIDTH bits
-        constant MAX_VALUE : Signed(result_out'length - 1 downto 0) :=
-            (result_out'length - 1 => '0', others => '1');
-        -- Min signed value with DATA_WIDTH bits
-        constant MIN_VALUE : Signed(result_out'length - 1 downto 0) :=
-            (result_out'length - 1 => '1', others => '0');
+architecture logic of mulSignedSat is
 
-        -- Result of the multiplication
-        variable result : Unsigned(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
+    -- Max signed value with DATA_WIDTH bits
+    constant MAX_VALUE : Signed(result_out'length - 1 downto 0) :=
+        (result_out'length - 1 => '0', others => '1');
+    -- Min signed value with DATA_WIDTH bits
+    constant MIN_VALUE : Signed(result_out'length - 1 downto 0) :=
+        (result_out'length - 1 => '1', others => '0');
 
+    -- Result of the multiplication
+    signal result : Signed(a_in'length + b_in'length - TWO_POW_DIV - 1 downto 0);
+
+begin
+
+    -- Multiply inputs
+    result <= resize(a_in * b_in / to_signed(Integer(2**TWO_POW_DIV), a_in'length + b_in'length), result'length);
+
+    -- Saturation logic
+    process(result) is
     begin
-
-        -- Multiply inputs
-        result := resize(a_in * b_in / 2**TWO_POW_DIV, result'length);
 
         -- If overflow occurred
         if(result > MAX_VALUE) then
@@ -276,6 +273,6 @@ package body dsp is
             err_out <= '0';
         end if;
 
-    end procedure;
+    end process;
 
-end package body dsp;
+end architecture logic;
