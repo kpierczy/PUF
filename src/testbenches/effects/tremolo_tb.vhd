@@ -55,7 +55,7 @@ entity TremoloEffectTb is
         
         -- ===================== Input signal's parameters ====================== --
 
-        -- Type of the input wave (available: [sin])
+        -- Type of the input wave (available: [sin/sin_rand])
         INPUT_TYPE : String := "sin";
 
         -- Frequency of the input signal 
@@ -63,14 +63,19 @@ entity TremoloEffectTb is
         -- Amplitude of the input wave in normalized range <0; 1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
 
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real := 0.0;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real := 0.01;
+        
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 0;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 60;
         -- Number of system clock's cycles that the `enable_in` port is held low
-        CYCLIC_DISABLE_CLK : Positive := 1;
+        CYCLIC_DISABLE_CLK : Positive := 200_000;
 
         -- ================ Effect parameters' stimulus signals ================= --
 
@@ -81,10 +86,10 @@ entity TremoloEffectTb is
 
         -- Additional argument used to automatically calculate MODULATION_TICKS_PER_SAMPLE_AMPLITUDE
         -- for the given modulation frequency (MODULATION_TICKS_PER_SAMPLE_AMPLITUDE used when < 0)
-        MODULATION_FREQ_HZ_AMPLITUDE : Integer := 50;
+        MODULATION_FREQ_HZ_AMPLITUDE : Integer := 70;
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1>
-        MODULATION_DEPTH_AMPLITUDE : Real := 0.5;
+        MODULATION_DEPTH_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `depth_in` input
         MODULATION_TOGGLE_DEPTH_FREQ_HZ : Natural := 0;
 
@@ -163,21 +168,35 @@ architecture logic of TremoloEffectTb is
 begin
     
     -- =================================================================================
-    -- System signals
+    -- Common effects' benchtable
     -- =================================================================================
 
-    -- Clock signal
-    clock_tb(CLK_PERIOD, clk);
-
-    -- Reset signal
-    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
+    -- Instance of the common features regarding guitar effects' testing
+    effectTestbenchInstance: entity work.EffectTestbench(logic)
+    generic map (
+        SYS_CLK_HZ             => SYS_CLK_HZ,
+        SYS_RESET_TICKS        => SYS_RESET_TICKS,
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        INPUT_TYPE             => INPUT_TYPE,
+        INPUT_FREQ_HZ          => INPUT_FREQ_HZ,
+        INPUT_AMPLITUDE        => INPUT_AMPLITUDE,
+        INPUT_SAMPLING_FREQ_HZ => INPUT_SAMPLING_FREQ_HZ,
+        INPUT_RAND_MEAN        => INPUT_RAND_MEAN,
+        INPUT_RAND_STD_DEV     => INPUT_RAND_STD_DEV,
+        CYCLIC_DISABLE_FREQ_HZ => CYCLIC_DISABLE_FREQ_HZ,
+        CYCLIC_DISABLE_CLK     => CYCLIC_DISABLE_CLK
+    )
+    port map (
+        reset_n   => reset_n,
+        clk       => clk,
+        enable_in => enable_in,
+        sample_in => sample_in,
+        valid_in  => valid_in
+    );
 
     -- =================================================================================
     -- Module's instance
     -- =================================================================================
-    
-    -- Control `enable_in` signal with it's negation
-    enable_in <= not(disable_in);
 
     -- Instance of the tremolo effect's module
     tremoloEffectInstance: entity work.TremoloEffect
@@ -204,26 +223,12 @@ begin
     );
 
     -- =================================================================================
-    -- Input signals' generation 
+    -- Input parameters' generation 
     -- =================================================================================
-    
-    -- Generate input signal : sin
-    inputSin : if INPUT_TYPE = "sin" generate
-        sample_in <= to_signed(integer(sample_tmp), SAMPLE_WIDTH);
-        generate_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQ_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
-            OFFSET       => 0.0,
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_tmp
-        );
-    end generate;
 
+    -- Transform signal into the signed value using saturation
+    depth_in <= real_to_unsigned_sat(depth_tmp, MODULATION_DEPTH_WIDTH);
     -- Generate `depth` signal
-    depth_in <= to_unsigned(Natural(depth_tmp), MODULATION_DEPTH_WIDTH);
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => MODULATION_TOGGLE_DEPTH_FREQ_HZ,
@@ -234,8 +239,9 @@ begin
         wave         => depth_tmp
     );
 
-    -- Generate `modulation_ticks_per_sample_in signal
-    ticks_per_modulation_sample_in <= to_unsigned(Natural(ticks_per_modulation_sample_tmp), MODULATION_TICKS_PER_SAMPLE_WIDTH);
+    -- Transform signal into the signed value using saturation
+    ticks_per_modulation_sample_in <= real_to_unsigned_sat(ticks_per_modulation_sample_tmp, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+    -- Generate `modulation_ticks_per_sample_in` signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => MODULATION_TOGGLE_TICKS_PER_SAMPLE_FREQ_HZ,
@@ -244,29 +250,6 @@ begin
         reset_n      => reset_n,
         clk          => clk,
         wave         => ticks_per_modulation_sample_tmp
-    );    
-
-    -- =================================================================================
-    -- Input signal's sampling process
-    -- =================================================================================
-
-    -- Generate cyclic reset signal
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => CYCLIC_DISABLE_FREQ_HZ,
-        HIGH_CLK         => CYCLIC_DISABLE_CLK,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => disable_in
-    );   
-
-    -- Generate sampling pulse 
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => valid_in
     );
 
 end architecture logic;

@@ -46,30 +46,31 @@ entity DelayEffectTb is
         -- ===================== Input signal's parameters ====================== --
 
         -- Type of the input wave (available: [sin/sin_rand])
-        INPUT_TYPE : String := "sin_rand";
+        INPUT_TYPE : String := "sin";
 
         -- Frequency of the input signal 
         INPUT_FREQ_HZ : Positive := 1000;
-        -- Amplitude of the input wave in normalized range <0; 1>
+        -- Amplitude of the input wave in normalized range <0;1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
         INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
 
-        -- Limits of the uniform random summant of the input signal
-        INPUT_MIN_RAND : Real := 0;
-        INPUT_MAX_RAND : Real := 0;
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real := 0.0;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real := 0.01;
 
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 50;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 70;
         -- Number of system clock's cycles that the `enable_in` port is held low
         CYCLIC_DISABLE_CLK : Positive := 1;
 
         -- ================ Effect parameters' stimulus signals ================= --
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1> ('1.0' is (BRAM_SAMPLES_NUM - 1))
-        DEPTH_AMPLITUDE : Real := 0.25;
+        DEPTH_AMPLITUDE : Real := 0.5;
         -- Frequency of the changes of `depth_in` input
         DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
 
@@ -96,12 +97,12 @@ architecture logic of DelayEffectTb is
     -- ================== Common effects's interface ================== --
 
     -- Module's enable signal and it's negation
-    signal enable_in, disable_in : Std_logic := '1';
+    signal enable_in : Std_logic := '1';
     -- Input and output samples
     signal sample_in, sample_out :  Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-    -- Signal for new sample on input (rising-edge-active)
+    -- Signal for new sample on input
     signal valid_in : Std_logic := '0';
-    -- Signal for new sample on output (rising-edge-active)
+    -- Signal for new sample on output
     signal valid_out : Std_logic;
     
     -- ================= Specific effects's interface ================= --
@@ -113,31 +114,43 @@ architecture logic of DelayEffectTb is
 
     -- ====================== Auxiliary signals ====================== --
 
-    -- Real-converted input signal
-    signal sample_tmp : Real;
     -- Real-converted depth input value
     signal depth_tmp : Real;
     -- Real-converted attenuation input value
     signal attenuation_tmp : Real;
 
 begin
-    
+
     -- =================================================================================
-    -- System signals
+    -- Common effects' benchtable
     -- =================================================================================
 
-    -- Clock signal
-    clock_tb(CLK_PERIOD, clk);
-
-    -- Reset signal
-    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
+    -- Instance of the common features regarding guitar effects' testing
+    effectTestbenchInstance: entity work.EffectTestbench(logic)
+    generic map (
+        SYS_CLK_HZ             => SYS_CLK_HZ,
+        SYS_RESET_TICKS        => SYS_RESET_TICKS,
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        INPUT_TYPE             => INPUT_TYPE,
+        INPUT_FREQ_HZ          => INPUT_FREQ_HZ,
+        INPUT_AMPLITUDE        => INPUT_AMPLITUDE,
+        INPUT_SAMPLING_FREQ_HZ => INPUT_SAMPLING_FREQ_HZ,
+        INPUT_RAND_MEAN        => INPUT_RAND_MEAN,
+        INPUT_RAND_STD_DEV     => INPUT_RAND_STD_DEV,
+        CYCLIC_DISABLE_FREQ_HZ => CYCLIC_DISABLE_FREQ_HZ,
+        CYCLIC_DISABLE_CLK     => CYCLIC_DISABLE_CLK
+    )
+    port map (
+        reset_n   => reset_n,
+        clk       => clk,
+        enable_in => enable_in,
+        sample_in => sample_in,
+        valid_in  => valid_in
+    );
 
     -- =================================================================================
     -- Module's instance
     -- =================================================================================
-    
-    -- Control `enable_in` signal with it's negation
-    enable_in <= not(disable_in);
     
     -- Instance of the tremolo effect's module
     delayEffectInstance : entity work.DelayEffect
@@ -162,43 +175,12 @@ begin
     );
 
     -- =================================================================================
-    -- Input signals' generation 
+    -- Input parameters' generation 
     -- =================================================================================
-    
-    -- Generate input signal : sin
-    inputSin : if INPUT_TYPE = "sin" generate
-        sample_in <= to_signed(integer(sample_tmp), SAMPLE_WIDTH);
-        generate_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQ_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
-            OFFSET       => 0.0,
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_tmp
-        );
-    end generate;
 
-    -- Generate input signal : sin with uniform noise
-    inputSin : if INPUT_TYPE = "sin_rand" generate
-        sample_in <= to_signed(integer(sample_tmp), SAMPLE_WIDTH);
-        generate_random_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQ_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
-            OFFSET       => 0.0,
-            LOW_RAND     => INPUT_MIN_RAND,
-            HIGH_RAND    => INPUT_MAX_RAND,
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_tmp
-        );
-    end generate;
-
-    -- Generate `depth_in` signal
-    depth_in <= to_unsigned(Natural(depth_tmp), DEPTH_WIDTH);
+    -- Transform signal into the signed value using saturation
+    depth_in <= real_to_unsigned_sat(depth_tmp, DEPTH_WIDTH);
+    -- Generate `depth_in` signal    
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => DEPTH_TOGGLE_FREQ_HZ,
@@ -209,8 +191,9 @@ begin
         wave         => depth_tmp
     );
 
-    -- Generate `attenuation_in` signal
-    attenuation_in <= to_unsigned(Natural(attenuation_tmp), ATTENUATION_WIDTH);
+    -- Transform signal into the signed value using saturation
+    attenuation_in <= real_to_unsigned_sat(attenuation_tmp, ATTENUATION_WIDTH);
+    -- Generate `attenuation_in` signal    
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => ATTENUATION_TOGGLE_FREQ_HZ,
@@ -221,27 +204,5 @@ begin
         wave         => attenuation_tmp
     );    
 
-    -- =================================================================================
-    -- Input signal's sampling process
-    -- =================================================================================
-
-    -- Generate cyclic reset signal
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => CYCLIC_DISABLE_FREQ_HZ,
-        HIGH_CLK         => CYCLIC_DISABLE_CLK,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => disable_in
-    );   
-
-    -- Generate sampling pulse 
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => valid_in
-    );
 
 end architecture logic;

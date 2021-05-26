@@ -44,22 +44,27 @@ entity ClippingEffectTb is
         --    steps with given frequency and amplitude.
         -- -------------------------------------------------------------------------
 
-        -- Type of the input wave (available: [sin])
-        INPUT_TYPE : String := "sin";
+        -- Type of the input wave (available: [sin/sin_rand])
+        INPUT_TYPE : String := "sin_rand";
 
         -- Frequency of the input signal 
-        INPUT_FREQU_HZ : Natural := 2000;
+        INPUT_FREQ_HZ : Natural := 1000;
         -- Amplitude of the input wave in normalized range <0; 1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 44100;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
+
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real := 0.0;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real := 0.02;
 
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 0;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 70;
         -- Number of system clock's cycles that the `enable_in` port is held low
-        CYCLIC_DISABLE_CLK : Positive := 1;
+        CYCLIC_DISABLE_CLK : Positive := 200_000;
 
         -- ================ Effect parameters' stimulus signals ================= --
 
@@ -84,9 +89,6 @@ end entity ClippingEffectTb;
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
 architecture logic of ClippingEffectTb is
-
-    -- Peiord of the system clock
-    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;    
     
     -- Reset signal
     signal reset_n : Std_logic := '0';
@@ -96,7 +98,7 @@ architecture logic of ClippingEffectTb is
     -- ================== Common effects's interface ================== --
 
     -- Module's enable signal and it's negation
-    signal enable_in, disable_in : Std_logic := '1';
+    signal enable_in : Std_logic := '1';
     -- Input and output samples
     signal sample_in, sample_out : Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
 
@@ -114,31 +116,43 @@ architecture logic of ClippingEffectTb is
 
     -- ====================== Auxiliary signals ====================== --
 
-    -- Real-converted input signal
-    signal sample_in_tmp : Real;
     -- Real-converted gain signal
-    signal gain_in_tmp : Real;
+    signal gain_tmp : Real;
     -- Real-converted saturation signal
-    signal saturation_in_tmp : Real;
+    signal saturation_tmp : Real;
 
 begin
 
     -- =================================================================================
-    -- System signals
+    -- Common effects' benchtable
     -- =================================================================================
 
-    -- Clock signal
-    clock_tb(CLK_PERIOD, clk);
-
-    -- Reset signal
-    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
+    -- Instance of the common features regarding guitar effects' testing
+    effectTestbenchInstance: entity work.EffectTestbench(logic)
+    generic map (
+        SYS_CLK_HZ             => SYS_CLK_HZ,
+        SYS_RESET_TICKS        => SYS_RESET_TICKS,
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        INPUT_TYPE             => INPUT_TYPE,
+        INPUT_FREQ_HZ          => INPUT_FREQ_HZ,
+        INPUT_AMPLITUDE        => INPUT_AMPLITUDE,
+        INPUT_SAMPLING_FREQ_HZ => INPUT_SAMPLING_FREQ_HZ,
+        INPUT_RAND_MEAN        => INPUT_RAND_MEAN,
+        INPUT_RAND_STD_DEV     => INPUT_RAND_STD_DEV,
+        CYCLIC_DISABLE_FREQ_HZ => CYCLIC_DISABLE_FREQ_HZ,
+        CYCLIC_DISABLE_CLK     => CYCLIC_DISABLE_CLK
+    )
+    port map (
+        reset_n   => reset_n,
+        clk       => clk,
+        enable_in => enable_in,
+        sample_in => sample_in,
+        valid_in  => valid_in
+    );
 
     -- =================================================================================
     -- Module's instance
     -- =================================================================================
-
-    -- Control `enable_in` signal with it's negation
-    enable_in <= not(disable_in);
 
     -- Instance of the clipping effect's module
     clippingEffectInstance : entity work.ClippingEffect(logic)
@@ -160,26 +174,12 @@ begin
     );
 
     -- =================================================================================
-    -- Input signals' generation 
+    -- Input parameters' generation 
     -- =================================================================================
 
-    -- Generate input signal : sin
-    inputSin : if INPUT_TYPE = "sin" generate
-        sample_in <= to_signed(integer(sample_in_tmp), SAMPLE_WIDTH);
-        generate_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQU_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE) * (2**(SAMPLE_WIDTH - 1) - 1),
-            OFFSET       => 0.0,
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_in_tmp
-        );
-    end generate;
-
+    -- Transform signal into the signed value using saturation
+    gain_in <= real_to_unsigned_sat(gain_tmp, GAIN_WIDTH);
     -- Generate gain signal
-    gain_in <= to_unsigned(Natural(gain_in_tmp), GAIN_WIDTH);
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => GAIN_TOGGLE_FREQ_HZ,
@@ -187,11 +187,12 @@ begin
         MAX_VAL      => Real(Integer(GAIN_AMPLITUDE * (2**GAIN_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => gain_in_tmp
+        wave         => gain_tmp
     );
 
+    -- Transform signal into the signed value using saturation
+    saturation_in <= real_to_unsigned_sat(saturation_tmp, SAMPLE_WIDTH - 1);
     -- Generate saturation signal
-    saturation_in <= to_unsigned(Natural(saturation_in_tmp), SAMPLE_WIDTH - 1);
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => SATURATION_TOGGLE_FREQ_HZ,
@@ -199,30 +200,7 @@ begin
         MAX_VAL      => Real(Integer(SATURATION_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => saturation_in_tmp
-    );
-
-    -- =================================================================================
-    -- Input signal's sampling process
-    -- =================================================================================
-
-    -- Generate cyclic reset signal
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => CYCLIC_DISABLE_FREQ_HZ,
-        HIGH_CLK         => CYCLIC_DISABLE_CLK,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => disable_in
-    );   
-
-    -- Generate sampling pulse 
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => valid_in
+        wave         => saturation_tmp
     );
 
 end architecture logic;

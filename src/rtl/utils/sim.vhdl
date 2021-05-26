@@ -13,9 +13,24 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
--- ------------------------------------------------------------- Header --------------------------------------------------------------
+-- ===================================================================================================================================
+-- ------------------------------------------------------------- Package -------------------------------------------------------------
+-- ===================================================================================================================================
 
 package sim is
+
+    -- ===================================================================
+    -- Auxiliary functions
+    -- ===================================================================
+
+    -- Absolute value of a real number
+    function absolute(num : Real) return Real;
+    
+    -- Converts Real value to the Signed bit vector of the given length saturating value when needed
+    function real_to_signed_sat(num : Real; len : Positive) return Signed;
+
+    -- Converts Real value to the Unsigned bit vector of the given length saturating value when needed
+    function real_to_unsigned_sat(num : Real; len : Positive) return Unsigned;
 
     -- ===================================================================
     -- General use utilities
@@ -67,30 +82,6 @@ package sim is
     -- Wave generators
     -- ===================================================================
 
-    -- Generates sine wave summed with the uniform noised from the given range
-    procedure generate_random_sin(
-        -- System clock's frequency
-        constant SYS_CLK_HZ : Positive;
-        -- Wave's frequency
-        constant FREQUENCY_HZ : Natural;
-        -- Wave's phase shift (in normalized range (0;1>)
-        constant PHASE_SHIFT : Real;
-        -- Wave's amplitude
-        constant AMPLITUDE : Real;
-        -- Wave's offset
-        constant OFFSET : Real;
-        -- Lower bound of the random summant
-        constant LOW_RAND : Real := 0.0;
-        -- Higher bound of the random summant
-        constant HIGH_RAND : Real := 0.0;
-        -- System reset
-        signal reset_n : in std_logic;
-        -- System clock
-        signal clk : in std_logic;
-        -- Output wave
-        signal wave : out Real
-    );
-
     -- Generates sine wave updating samples at rising edge of the clock
     procedure generate_sin(
         -- System clock's frequency
@@ -103,6 +94,30 @@ package sim is
         constant AMPLITUDE : Real;
         -- Wave's offset
         constant OFFSET : Real;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal wave : out Real
+    );
+
+    -- Generates sine wave summed with the gaussian noise of given parameters
+    procedure generate_random_sin(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift (in normalized range (0;1>)
+        constant PHASE_SHIFT : Real;
+        -- Wave's amplitude
+        constant AMPLITUDE : Real;
+        -- Wave's offset
+        constant OFFSET : Real;
+        -- Mean value of the gaussian distribution
+        constant RNG_MEAN : Real := 0.0;
+        -- Standard deviation of the gaussian distribution
+        constant RNG_STD_DEV : Real := 1.0;
         -- System reset
         signal reset_n : in std_logic;
         -- System clock
@@ -147,9 +162,55 @@ package sim is
 
 end package sim;
 
--- -------------------------------------------------------------- Body ---------------------------------------------------------------
+-- ===================================================================================================================================
+-- ---------------------------------------------------------- Package Body -----------------------------------------------------------
+-- ===================================================================================================================================
 
 package body sim is
+
+    -- ===================================================================
+    -- Auxiliary functions
+    -- ===================================================================
+
+    -- Absolute value of a real number
+    function absolute(num : Real) return Real is
+    begin
+        if(num >= 0.0) then
+            return num;
+        else
+            return -num;
+        end if;
+    end function;
+
+    -- Converts Real value to the Signed bit vector of the given length saturating value when needed
+    function real_to_signed_sat(num : Real; len : Positive) return Signed is
+    begin
+        -- Check whether value is in range
+        if(Integer(absolute(num)) <= 2**(len - 1) - 1) then
+            return to_signed(integer(num), len);
+        -- If over th range, saturate on max value
+        elsif(num > 0.0) then
+            return to_signed(integer(2**(len - 1) - 1), len);
+        -- If under the range, saturate on min value
+        else
+            return to_signed(integer(-2**(len - 1)), len);
+        end if;
+    end function;
+
+    -- Converts Real value to the Unsigned bit vector of the given length saturating value when needed
+    function real_to_unsigned_sat(num : Real; len : Positive) return Unsigned is
+    begin
+        -- Check whether value is in range
+        if((Integer(num) <= 2**len - 1) and (Integer(num) >= 0)) then
+            return to_unsigned(integer(num), len);
+        -- If over th range, saturate on max value
+        elsif(num > 0.0) then
+            return to_unsigned(2**len - 1, len);
+        -- If under the range, saturate on min value
+        else
+            return to_unsigned(0, len);
+        end if;
+    end function;    
 
     -- ===================================================================
     -- General use utilities
@@ -204,7 +265,7 @@ package body sim is
     end procedure;
 
     -- ===================================================================
-    -- Random generators
+    -- Uniform random generators
     -- ===================================================================
 
     -- Sets internal seeds for RN Generator
@@ -254,7 +315,25 @@ package body sim is
             slv(i) := '1' when r > 0.5 else '0';
         end loop;
         return slv;
-      end function;
+    end function;
+
+    -- ===================================================================
+    -- Gaussian random generators
+    -- ===================================================================
+
+    impure function rand_real_gaussian(mean, std_dev : Real) return Real is
+        variable R, O : Real;
+        variable ret : real;
+    begin
+        -- Draw two random values from the uniform distribution and transform them
+        R := -2.0 * log(rand_real(0.0, 1.0));
+        O := 2.0 * math_pi * rand_real(0.0, 1.0);
+        -- Compute gaussian random number following Box-Muller rule
+        ret := R * cos(O);
+        -- ret := R * sin(O);
+        -- Returned scaled version of the number
+        return ret * std_dev + mean;
+    end function;
 
     -- ===================================================================
     -- Wave generators
@@ -299,7 +378,7 @@ package body sim is
 
     end procedure;
 
-    -- Generates sine wave summed with the uniform noised from the given range
+    -- Generates sine wave summed with the gaussian noise of given parameters
     procedure generate_random_sin(
         -- System clock's frequency
         constant SYS_CLK_HZ : Positive;
@@ -311,10 +390,10 @@ package body sim is
         constant AMPLITUDE : Real;
         -- Wave's offset
         constant OFFSET : Real;
-        -- Lower bound of the random summant
-        constant LOW_RAND : Real := 0.0;
-        -- Higher bound of the random summant
-        constant HIGH_RAND : Real := 0.0;
+        -- Mean value of the gaussian distribution
+        constant RNG_MEAN : Real := 0.0;
+        -- Standard deviation of the gaussian distribution
+        constant RNG_STD_DEV : Real := 1.0;
         -- System reset
         signal reset_n : in std_logic;
         -- System clock
@@ -338,7 +417,7 @@ package body sim is
             ticks := ticks + 1;
             wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) +
                     OFFSET + 
-                    rand_real(LOW_RAND, HIGH_RAND);
+                    rand_real_gaussian(RNG_MEAN, RNG_STD_DEV);
             wait for CLK_PERIOD;
         end loop;
 
@@ -438,3 +517,162 @@ package body sim is
     end procedure;
 
 end package body sim;
+
+-- ===================================================================================================================================
+-- ------------------------------------------------------------ Entities -------------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
+library work;
+use work.sim.all;
+
+-- General entity for effect's testing
+entity EffectTestbench is
+    generic(
+
+        -- ========================= General parameters ========================= --
+
+        -- Frequency of the system clock
+        SYS_CLK_HZ : Positive;
+        -- Count of system clock's ticks that the reset signal is active at the beggining
+        SYS_RESET_TICKS : Positive;
+        -- Width of the samples
+        SAMPLE_WIDTH : Positive := 16;
+
+        -- ===================== Input signal's parameters ====================== --
+
+        -- Type of the input wave (available: [sin/sin_rand])
+        INPUT_TYPE : String;
+
+        -- Frequency of the input signal 
+        INPUT_FREQ_HZ : Positive;
+        -- Amplitude of the input wave in normalized range <0;1>
+        INPUT_AMPLITUDE : Real;
+        -- Sampling frequency of the input signal
+        INPUT_SAMPLING_FREQ_HZ : Positive;
+
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real;
+
+        -- ==================== Enable signal's parameters ====================== --
+
+        -- Frequency of pulling down the `enable_in` input port (disabled when 0)
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 50;
+        -- Number of system clock's cycles that the `enable_in` port is held low
+        CYCLIC_DISABLE_CLK : Positive := 1
+    );
+    port(
+
+        -- ========================== System signals ============================ --
+
+        -- Reset signal
+        reset_n : out Std_logic := '0';
+        -- System clock
+        clk : out Std_logic := '0';
+
+        -- ===================== Common effects' interface ====================== --
+
+        -- Module's enable signal
+        enable_in : out Std_logic := '1';
+        -- Input sample
+        sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+        -- Signal for new sample on input
+        valid_in : out Std_logic := '0'
+    );
+end entity EffectTestbench;
+
+architecture logic of EffectTestbench is
+
+    -- Peiord of the system clock
+    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;  
+
+    -- Negation of module's enable signal
+    signal disable_in : Std_logic := '1';
+
+    -- Real-converted input signal
+    signal sample_tmp : Real;
+
+begin
+
+    -- =================================================================================
+    -- System signals
+    -- =================================================================================
+
+    -- Clock signal
+    clock_tb(CLK_PERIOD, clk);
+
+    -- Reset signal
+    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
+
+    -- Control `enable_in` signal with it's negation
+    enable_in <= not(disable_in);    
+
+    -- =================================================================================
+    -- Input signals' generation 
+    -- =================================================================================
+    
+    -- Generate input signal : sin
+    inputSin : if INPUT_TYPE = "sin" generate
+        -- Transform wave into the signed value using saturation
+        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
+        -- Generate sinusoidal wave
+        generate_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
+        );
+    end generate;
+
+    -- Generate input signal : sin with uniform noise
+    inputSinRand : if INPUT_TYPE = "sin_rand" generate
+        -- Transform wave into the signed value using saturation
+        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
+        -- Generate sinusoidal with white noise wave
+        generate_random_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            RNG_MEAN     => INPUT_RAND_MEAN * Real(2**(SAMPLE_WIDTH - 1) - 1),
+            RNG_STD_DEV  => INPUT_RAND_STD_DEV * Real(2**(SAMPLE_WIDTH - 1) - 1),
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
+        );
+    end generate;
+
+    -- =================================================================================
+    -- Input periodic flags
+    -- =================================================================================
+
+    -- Generate cyclic disabling signal
+    generate_clk(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        FREQUENCY_HZ     => CYCLIC_DISABLE_FREQ_HZ,
+        HIGH_CLK         => CYCLIC_DISABLE_CLK,
+        reset_n          => reset_n,
+        clk              => clk,
+        wave             => disable_in
+    );   
+
+    -- Generate sampling pulse 
+    generate_clk(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
+        reset_n          => reset_n,
+        clk              => clk,
+        wave             => valid_in
+    );
+
+end architecture logic;
