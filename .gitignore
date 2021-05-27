@@ -7,3 +7,5 @@ doc/out
 **/*.jou
 **/*.str
 **/*.Xil
+# Sound files
+**/*.wav
