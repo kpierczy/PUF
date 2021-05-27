@@ -110,7 +110,7 @@ begin
     quadrupletGeneratorCase : if GENERATOR_TYPE = QUADRUPLET generate
 
         -- Generator's instance
-        triangleGeneratorInstance : entity work.QuadrupletGenerator
+        quadrupletGeneratorInstance : entity work.QuadrupletGenerator
         generic map (
             MODE         => UNSIGNED_OUT,
             SAMPLES_NUM  => BRAM_SAMPLES_NUM,
@@ -486,7 +486,9 @@ begin
 
                     -- If too high modulation frequency is used, select valid frequency
                     ticks_per_modulation_sample_actual := 
-                        maximum(ticks_per_modulation_sample_in, to_unsigned(GENERATOR_LATENCY, ticks_per_modulation_sample_actual'length));
+                        ticks_per_modulation_sample_in when 
+                            ticks_per_modulation_sample_in > to_unsigned(GENERATOR_LATENCY, ticks_per_modulation_sample_actual'length) 
+                        else to_unsigned(GENERATOR_LATENCY, ticks_per_modulation_sample_actual'length);
 
                     -- Check whether next sample is to be generated
                     if(ticks_since_last_modulation_sample < ticks_per_modulation_sample_actual) then

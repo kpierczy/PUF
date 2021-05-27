@@ -16,7 +16,8 @@
 --    This is true for basic periodic function as sine wave, triangle wave or square wave. Module is accommodated to function along 
 --    with native BRAM interface. Latency of the BRAM read operation can be set via generics.
 --
---    Generator can also be used in the unsigned mode where samples are treated as shifted to the half of the range.
+--    Generator can also be used in the unsigned mode where samples are shifted by the half of amplitude up and treated as unsigned
+--    values.
 --
 -- @ Note: Samples are assumed to be U2-coded signed values
 -- @ Note: Last sample in the memory is assumed to be local maximum of the wave. As so number of samples per wave's period is 4N - 4.
@@ -123,7 +124,6 @@ begin
             busy_out <= '0';
             bram_addr_buf <= Std_logic_vector(to_unsigned(0, ADDR_WIDTH));
             bram_en_out <= '0';
-            -- Reset internal buffers
             latency_ticks := 0;
             -- Reset quarter
             quarter_samples := 0;
@@ -162,13 +162,18 @@ begin
                         -- Output appropriate sample
                         case quarter is
                             when Q1|Q2 => 
+                                if(MODE = SIGNED_OUT) then
                                     sample_out <=  Std_logic_vector(bram_data_in);
+                                else
+                                    sample_out <= Std_logic_vector(
+                                        Unsigned(bram_data_in) + to_unsigned(2**(SAMPLE_WIDTH - 1), SAMPLE_WIDTH));
+                                end if;
                             when Q3|Q4 => 
                                 if(MODE = SIGNED_OUT) then
                                     sample_out <= Std_logic_vector(-Signed(bram_data_in));
                                 else
                                     sample_out <= Std_logic_vector(
-                                       2**(SAMPLE_WIDTH - 1) - Unsigned(bram_data_in)
+                                       to_unsigned(2**(SAMPLE_WIDTH - 1), SAMPLE_WIDTH) - Unsigned(bram_data_in)
                                     );
                                 end if;
                         end case;

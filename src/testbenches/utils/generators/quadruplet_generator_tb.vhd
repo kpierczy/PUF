@@ -17,6 +17,7 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
 use work.sim.all;
+use work.generator.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
@@ -35,6 +36,9 @@ entity QuadrupleGeneratorTb is
         ADDR_WIDTH : Positive := 7;
         -- Latency (in cycles of @in clk) fof the BRAM read (0 for data collection on the next cycle after ena_out = '1')
         BRAM_LATENCY : Positive := 2;
+
+        -- Output version
+        OUTPUT_MODE : Signess := UNSIGNED_OUT;
 
         -- Path to the file containing data of the BRAM block (every line has to hold sample's value in decimal coding)
         MIF_PATH : String := "/home/cris/Desktop/PUF/data/quadruplet-tb-bram/quadruplet_generator_bram.mif";
@@ -65,8 +69,7 @@ architecture logic of QuadrupleGeneratorTb is
     -- Next clk's cycle after `sample_clk`'s rising edge a new sample is read from memory
     signal en_in : Std_logic;
     -- Data lines
-    signal sample_out_raw : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
-    signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
+    signal sample_out : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
     -- Line is pulled to '1' when module is processing a sample
     signal busy_out : Std_logic;
 
@@ -98,7 +101,7 @@ architecture logic of QuadrupleGeneratorTb is
     type RamImage is array (0 to SAMPLES_NUM - 1) of Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
 
     -- Desired value of sample
-    signal sample_expected : Signed(SAMPLE_WIDTH - 1 downto 0);
+    signal sample_expected : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
 
     -- ======================== Helper content ======================== --
     
@@ -142,24 +145,22 @@ begin
     -- Instance of the quadruplet effect's module
     quadrupletGeneratorInstance : entity work.QuadrupletGenerator(logic)
     generic map (
-        SAMPLES_NUM        => SAMPLES_NUM,
-        SAMPLE_WIDTH       => SAMPLE_WIDTH,
-        ADDR_WIDTH         => ADDR_WIDTH,
-        BRAM_LATENCY       => BRAM_LATENCY
+        SAMPLES_NUM  => SAMPLES_NUM,
+        SAMPLE_WIDTH => SAMPLE_WIDTH,
+        ADDR_WIDTH   => ADDR_WIDTH,
+        BRAM_LATENCY => BRAM_LATENCY,
+        MODE         => OUTPUT_MODE
     )
     port map (
         reset_n       => reset_n,
         clk           => clk,
         en_in         => en_in,
-        sample_out    => sample_out_raw,
+        sample_out    => sample_out,
         busy_out      => busy_out,
         bram_addr_out => bram_addr_in,
         bram_data_in  => bram_data_out,
         bram_en_out   => bram_en_in
     );
-
-    -- Convert bitvector to number
-    sample_out <= Signed(sample_out_raw);
 
     -- BRAM instance
     quadrupletGeneratorBramInstance : QuadrupletGeneratorTbBram
@@ -224,7 +225,7 @@ begin
         variable quarter_sample_num : Natural;
 
         -- Variable representation fo expected sample
-        variable sample_expected_var : signed(SAMPLE_WIDTH - 1 downto 0);
+        variable sample_expected_var : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
 
     begin
 
@@ -233,7 +234,13 @@ begin
         -- Reset quarters
         quarter := Q1;
         quarter_sample_num := 0;
-        sample_expected_var := Signed(bram(quarter_sample_num));
+        -- Set expected value according to the first element in BRAM
+        if(OUTPUT_MODE = SIGNED_OUT) then
+            sample_expected_var :=  Std_logic_vector(bram(quarter_sample_num));
+        else
+            sample_expected_var := Std_logic_vector(
+                Unsigned(bram(quarter_sample_num)) + to_unsigned(2**(SAMPLE_WIDTH - 1), SAMPLE_WIDTH));
+        end if;
 
         -- Wait for end of reset
         wait until reset_n = '1';
@@ -277,10 +284,23 @@ begin
                         
             -- Update next expected sample
             case quarter is
+
                 when Q1|Q2 => 
-                    sample_expected_var :=  Signed(bram(quarter_sample_num));
+                    if(OUTPUT_MODE = SIGNED_OUT) then
+                        sample_expected_var :=  Std_logic_vector(bram(quarter_sample_num));
+                    else
+                        sample_expected_var := Std_logic_vector(
+                            Unsigned(bram(quarter_sample_num)) + to_unsigned(2**(SAMPLE_WIDTH - 1), SAMPLE_WIDTH));
+                    end if;
                 when Q3|Q4 => 
-                    sample_expected_var := -Signed(bram(quarter_sample_num));
+                    if(OUTPUT_MODE = SIGNED_OUT) then
+                        sample_expected_var := Std_logic_vector(-Signed(bram(quarter_sample_num)));
+                    else
+                        sample_expected_var := Std_logic_vector(
+                            to_unsigned(2**(SAMPLE_WIDTH - 1), SAMPLE_WIDTH) - Unsigned(bram(quarter_sample_num))
+                        );
+                    end if;
+
             end case;
 
         end loop;

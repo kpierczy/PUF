@@ -128,7 +128,7 @@ architecture logic of TremoloEffectTb is
 
     -- Tremolo's depth aprameter (treated as value in <0, 1) range)
     signal depth_in : Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);  
-    -- Module's saturation
+    -- Modulation's frequency-controlling input
     signal ticks_per_modulation_sample_in : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
 
     -- ====================== Auxiliary signals ====================== --

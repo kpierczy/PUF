@@ -21,7 +21,7 @@ from pathlib import Path
 # ---------------------------------------------------------- Configuration -----------------------------------------------------------
 
 # Path to the output file
-FILE_PATH = "data/tremolo-effect-bram/tremolo_effect_bram.txt"
+FILE_PATH = "data/chorus-effect-generator-bram/chorus_effect_generator_bram.txt"
 
 # If true, an additional MIF file representation is generated
 MIF_FILE = True
@@ -41,10 +41,10 @@ WAVE_TYPE = 'sin'
 GAIN = 2**15 - 1
 
 # Shift of the generated wave (before gain)
-SHIFT = 1
+SHIFT = 0
 
 # Number of samples to be generated
-SAMPLES_NUM = 129
+SAMPLES_NUM = 5513
 
 # Function's argument's range to be taken into account (both sides inclusively)
 ARG_RANGE = (0, math.pi / 2)

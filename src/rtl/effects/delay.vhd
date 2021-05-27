@@ -40,7 +40,7 @@ entity DelayEffect is
         BRAM_LATENCY : Positive
     );
     port(
-        -- ==================== Effects' common interface =================== --
+        -- ====================== Effects' common interface ===================== --
 
         -- Reset signal (asynchronous)
         reset_n : in Std_logic;
@@ -59,7 +59,7 @@ entity DelayEffect is
         -- Gained sample
         sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
 
-        -- =================== Effect's-specific interface ================== --
+        -- ===================== Effect's-specific interface ==================== --
 
         -- Depth level (index of the delayed sample being summed with the input)
         depth_in : in unsigned(DEPTH_WIDTH - 1 downto 0);
@@ -223,7 +223,7 @@ begin
     -- ============================= Samples' summation ============================= --
 
     -- Internal summation of samples with saturation
-    sumsignedsat_inst: entity work.sumSignedSat
+    sumSignedSatInstance : entity work.sumSignedSat
       port map (
         a_in       => sample_in_buf,
         b_in       => delayed_sample,
