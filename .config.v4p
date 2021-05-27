@@ -1,0 +1,8 @@
+{
+    "excludes": {
+        "doc/materials/lectures/projects/**/*.vhd" : true,
+        "workdir/**/*.vhd": true,
+        "workdir/**/*.vhdl": true,
+        "workdir/**/*.vho": true
+   }
+}

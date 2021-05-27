@@ -59,8 +59,8 @@ entity EffectsPipe is
         tremolo_enable_in : in Std_logic;
         -- Tremolo's depth aprameter (treated as value in <0, 1) range)
         tremolo_depth_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
-        -- Number of system clock's ticks per modulation sample (minus 1)
-        tremolo_ticks_per_modulation_sample_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
+        -- Frequency-like value tremolo's LFO
+        tremolo_frequency_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
 
         -- ======================= Delay effect's interface ===================== --
 
@@ -79,8 +79,8 @@ entity EffectsPipe is
         flanger_depth_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
         -- Strength of the flanger effect
         flanger_strength_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
-        -- Delay's modulation frequency
-        flanger_ticks_per_delay_sample_in : in Unsigned(PARAM_WIDTH - 1 downto 0)
+        -- Frequency-like value flanger's LFO
+        flanger_frequency_in : in Unsigned(PARAM_WIDTH - 1 downto 0)
 
     );
 end entity EffectsPipe;
@@ -350,7 +350,7 @@ begin
         a_in       => to_unsigned(2**10, tremolo_ticks_per_modulation_sample_internal_in'length),
         b_in       => resize_from_right(
                         tremolo_ticks_per_modulation_sample_internal_in'length,
-                        tremolo_ticks_per_modulation_sample_in
+                        complete(tremolo_frequency_in)
                       ),
         result_out => tremolo_ticks_per_modulation_sample_internal_in,
         err_out    => open
@@ -433,7 +433,7 @@ begin
         a_in       => to_unsigned(2**15, flanger_ticks_per_delay_sample_internal_in'length),
         b_in       => resize_from_right(
                         flanger_ticks_per_delay_sample_internal_in'length,
-                        flanger_ticks_per_delay_sample_in
+                        complete(flanger_frequency_in)
                       ),
         result_out => flanger_ticks_per_delay_sample_internal_in,
         err_out    => open

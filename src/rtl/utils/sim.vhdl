@@ -571,8 +571,6 @@ entity PipeTestbench is
 
         -- ===================== Common effects' interface ====================== --
 
-        -- Module's enable signal
-        enable_in : out Std_logic := '1';
         -- Input sample
         sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
         -- Signal for new sample on input
