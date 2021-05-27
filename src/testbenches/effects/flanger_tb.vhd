@@ -36,9 +36,6 @@ entity FlangerEffectTb is
         -- Width of the `ticks_per_delay_sample_in` input
         TICKS_PER_DELAY_SAMPLE_WIDTH : Positive := 30;
 
-        -- Number of bits that the @in depth value is shifed right to calculate effective depth coefficient
-        DEPTH_TWO_POW_DIV : Positive := 13;
-
         -- =========================== BRAM parameters ========================== --
 
         -- Number of usable cells in delay line's BRAM
@@ -192,7 +189,6 @@ begin
         STRENGTH_WIDTH               => STRENGTH_WIDTH,
         DEPTH_WIDTH                  => DEPTH_WIDTH,
         TICKS_PER_DELAY_SAMPLE_WIDTH => TICKS_PER_DELAY_SAMPLE_WIDTH,
-        DEPTH_TWO_POW_DIV            => DEPTH_TWO_POW_DIV,
         DELAY_BRAM_SAMPLES_NUM       => DELAY_BRAM_SAMPLES_NUM,
         DELAY_BRAM_ADDR_WIDTH        => DELAY_BRAM_ADDR_WIDTH,
         DELAY_BRAM_LATENCY           => DELAY_BRAM_LATENCY,

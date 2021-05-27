@@ -28,9 +28,9 @@ entity ClippingEffect is
         -- --------------------------------------------------------------------------
 
         -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive range 2 to Positive'high := 10;
+        GAIN_WIDTH : Positive := 10;
         -- Index of the 2's power that the multiplication's result is divided by before saturation
-        TWO_POW_DIV : Natural range 0 to Positive'high := 8
+        TWO_POW_DIV : Natural := 8
     );
     port(
 

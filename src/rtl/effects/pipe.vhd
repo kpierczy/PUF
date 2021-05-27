@@ -7,8 +7,8 @@
 --    Sequential composition of the implemented guitar effects.
 --    
 -- @ Note : Choice of generic parameters of the effects was left to the default parameters set in their corresponding files.
--- @ Note : At the moment effects' configuration (implicitly) assumes that the sampling frequency is 48000Hz and samples are 
---      16-bit signed values.
+-- @ Note : At the moment effects' configuration (implicitly) assumes that the sampling frequency is 44100Hz and samples are 
+--      16-bit signed values as well as 100MHz system clock.
 -- ===================================================================================================================================
 
 library ieee;
@@ -139,6 +139,42 @@ architecture logic of EffectsPipe is
     -- Delay's modulation frequency
     signal flanger_ticks_per_delay_sample_internal_in : Unsigned;
 
+    -- ========================= Auxiliary functions ======================== --
+
+    -- Function returns @in right vector truncated or extended to @in len bits in sucha a way
+    -- that elements are added/removed to/from the right end of the @in right.
+    function resize_from_right(len : Positive; right : Unsigned) return Unsigned is
+        variable ret : unsigned(len - 1 downto 0) := (others => '0');
+    begin
+        -- If right vector should be extended
+        if(len > right'length) then
+            for i in 0 to right'length - 1 loop
+                ret(ret'left - i) := right(right'left - i);
+            end loop;
+        -- If right vector should be truncated
+        elsif(len < right'length) then
+            for i in 0 to len - 1 loop
+                ret(ret'left - i) := right(right'left - i);
+            end loop;
+        -- If vectors are of the same size
+        else
+            ret := right;
+        end if;
+
+        return ret;
+
+    end function;
+
+    -- Function calculating completion of the unsigned number
+    function complete(vec : Unsigned) return Unsigned is
+        variable ret : Unsigned(vec'range);
+    begin
+        for i in vec'range loop
+            ret(i) := not(vec(i));
+        end loop;
+        return ret;
+    end function;
+
 begin
 
     -- =======================================================================================================
@@ -254,44 +290,153 @@ begin
 
     -- ---------------------------------------------------------------------------------------
     -- Range of the gain effect is regulated by the clipping module's default parameters so
-    -- MSB of the external inptu can be just mapped to the MSB of the module.
+    -- MSBs of the external input can be just mapped to the MSBs of the module.
     -- ---------------------------------------------------------------------------------------
 
     -- External input wider than interna;
-    clippingGainExternalWiderCase : if clipping_gain_in'length >= clipping_gain_internal_in'length generate
-        clipping_gain_internal_in <= 
-            clipping_gain_in(clipping_gain_in'left downto clipping_gain_in'left - clipping_gain_internal_in'left)
-    end generate
-
-    -- External input more narrow than interna;
-    clippingGainExternalMoreNarrowrCase : if clipping_gain_in'length < clipping_gain_internal_in'length generate
-        clipping_gain_internal_in <= 
-            (clipping_gain_internal_in'left downto clipping_gain_internal_in'left - clipping_gain_in'left => clipping_gain_in,
-        others => '0')
-    end generate
+    clipping_gain_internal_in <= resize_from_right(
+        clipping_gain_internal_in'length, clipping_gain_in
+    );
     
     -- ---------------------------------------------------------------------------------------
     -- Saturation level was inverted so that `more saturation` means `more clipping`. 
     -- Moreover external input is mapped to the internal one in such way that maximum
-    -- saturation cuts top 1/4 of the samples' range
+    -- saturation cuts top 1/4 of the samples' range (i.e. 1/2 of the `saturation_in` range
+    -- as it's width is one bit less as the samples' width)
     -- ---------------------------------------------------------------------------------------   
 
-    clipping_saturation_internal_in;
+    clipping_saturation_internal_in <= complete(b"0" & resize_from_right(
+        clipping_saturation_internal_in'length, clipping_saturation_in
+    ));
     
     -- ============================= Tremolo effect's interface =========================== --
 
-    tremolo_depth_internal_in;
-    tremolo_ticks_per_modulation_sample_internal_in;
+    -- ---------------------------------------------------------------------------------------
+    -- Depth level's granularity is controlled by it's overall width. From view of the 
+    -- external input it is enough to drive MSBs of the input
+    -- ---------------------------------------------------------------------------------------
+    
+    tremolo_depth_internal_in <= resize_from_right(
+        tremolo_depth_internal_in'length, tremolo_depth_in
+    );
+
+    -- ---------------------------------------------------------------------------------------
+    -- At the moment width of the `ticks_per_modulation_sample_in` is set to 17-bit. It can
+    -- provide internal LFO's (Low Frequency Oscilator) frequency form range ~ <0.74, 97k> Hz.
+    -- The higher value of the input the LOWER frequency (as the period is longer). To revert 
+    -- this trend the completion (to 1) of the external input will be passed to the module's
+    -- input.
+    --
+    --  97kHz it too high frequency to be recorded with the 48kHz samplingrate and so it 
+    --  should never be set. To reduce the maximum frequency the 2^N value should always be
+    --  added to the actual preset. If so, the maximum frequency is divided by 2^N. N was 
+    --  choosen as 10. It truncates maximum frequencie's level to ~ 95 Hz. This value is next
+    --  added to the external input's value with saturation.
+    --
+    -- @ Note: LFO's frequency is described as f_LFO[t] = f_SYS / A_LFO / (ticks[t] + 1),
+    --     where
+    --
+    --     - f_LFO[t] - frequency of the LFO in [Hz]
+    --     - f_SYS - system clock's frequency in [Hz]
+    --     - A_LFO - amplitude of the LFO generator
+    --     - ticks[t] - value on the `ticks_per_delay_sample_in` input
+    --
+    --  From this equation it can be seen that adding 2^N to the mentioned input reduces 
+    --  maximum frequency by 2^N factor.
+    -- ---------------------------------------------------------------------------------------
+
+    tremoloLFOSumInstance : entity work.sumUnsignedSat
+    port map (
+        a_in       => to_unsigned(2**10, tremolo_ticks_per_modulation_sample_internal_in'length),
+        b_in       => resize_from_right(
+                        tremolo_ticks_per_modulation_sample_internal_in'length,
+                        tremolo_ticks_per_modulation_sample_in
+                      ),
+        result_out => tremolo_ticks_per_modulation_sample_internal_in,
+        err_out    => open
+    );
     
     -- ============================== Delay effect's interface ============================ --
 
-    delay_depth_internal_in;
-    delay_attenuation_internal_in;
+    -- ---------------------------------------------------------------------------------------
+    -- Attenuation input can always be used in the full range. The only fact to bear in mind
+    -- is that MSBs of the external input should always correspond to MSBs of the module's
+    -- input to cover full range (even if with not full granularity)
+    -- ---------------------------------------------------------------------------------------
+
+    delay_attenuation_internal_in <= resize_from_right(
+        delay_attenuation_internal_in'length, delay_attenuation_in
+    );
+
+    -- ---------------------------------------------------------------------------------------
+    -- Depth input can always be used in the full range. The only fact to bear in mind is that
+    -- MSBs of the external input should always correspond to MSBs of the module's input
+    -- to cover full range (even if with not full granularity)
+    -- ---------------------------------------------------------------------------------------
+
+    delay_depth_internal_in <= resize_from_right(
+        delay_depth_internal_in'length, delay_depth_in
+    );
     
     -- ============================= Flanger effect's interface =========================== --
 
-    flanger_depth_internal_in;
-    flanger_strength_internal_in;
-    flanger_ticks_per_delay_sample_internal_in;
+    -- ---------------------------------------------------------------------------------------
+    -- Strength level of the delayed summand is treated as value in range <0, 1). The only
+    -- importnt fact to fully utilize the offerred range (even though not always the full
+    -- granularity) is to map MSBs of the external input to the MSBs of the module's input
+    -- ---------------------------------------------------------------------------------------
+    
+    flanger_strength_internal_in <= resize_from_right(
+        flanger_strength_internal_in'length, flanger_strength_in
+    );
+
+    -- ---------------------------------------------------------------------------------------
+    -- The `depth_in` input of the flanger effect is always treated as the value in <0, 1)
+    -- range that scales the amplitude of the internal LFO generator. Similarly to the
+    -- `strength_in` it is important to map MSBs of the external input to the MSBs of the
+    -- effect's input.
+    -- ---------------------------------------------------------------------------------------
+
+    flanger_depth_internal_in <= resize_from_right(
+        flanger_depth_internal_in'length, flanger_depth_in
+    );
+
+    -- ---------------------------------------------------------------------------------------
+    -- At the moment width of the `ticks_per_modulation_sample_in` is set to 20-bit. It can
+    -- provide internal LFO's (Low Frequency Oscilator) frequency form range ~ <0.1, 97k> Hz.
+    -- The higher value of the input the LOWER frequency (as the period is longer). To revert 
+    -- this trend the completion (to 1) of the external input will be passed to the module's
+    -- input.
+    --
+    --  97kHz it too high frequency for the flanger effects. According to articles given in
+    --  the project's documentation, the flanger's LFO's frequency should not exceed 4Hz.
+    --  To reduce the maximum frequency, the N least significant bits of the mentioned
+    --  input should always be set to '1'. If so, the maximum frequency is divided by
+    --  2^N. N was choosen as 15. It truncates maximum frequencie's level to ~ 3 Hz. Rest of
+    --  the `non-fixed` bits of the module's input was mapped to the MSBs of the external 
+    --  input.
+    --
+    -- @ Note: LFO's frequency is described as f_LFO[t] = f_SYS / A_LFO / (ticks[t] + 1),
+    --     where
+    --
+    --     - f_LFO[t] - frequency of the LFO in [Hz]
+    --     - f_SYS - system clock's frequency in [Hz] (assummed 100MHz)
+    --     - A_LFO - amplitude of the LFO generator
+    --     - ticks[t] - value on the `ticks_per_delay_sample_in` input
+    --
+    --  From this equation it can be seen that adding 2^N to the mentioned input reduces 
+    --  maximum frequency by 2^N factor.
+    -- ---------------------------------------------------------------------------------------
+
+    flangerLFOSumInstance : entity work.sumUnsignedSat
+    port map (
+        a_in       => to_unsigned(2**15, flanger_ticks_per_delay_sample_internal_in'length),
+        b_in       => resize_from_right(
+                        flanger_ticks_per_delay_sample_internal_in'length,
+                        flanger_ticks_per_delay_sample_in
+                      ),
+        result_out => flanger_ticks_per_delay_sample_internal_in,
+        err_out    => open
+    );
 
 end architecture logic;

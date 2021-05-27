@@ -21,12 +21,12 @@ from pathlib import Path
 # ---------------------------------------------------------- Configuration -----------------------------------------------------------
 
 # Path to the output file
-FILE_PATH = "data/chorus-effect-generator-bram/chorus_effect_generator_bram.txt"
+FILE_PATH = "data/flanger-effect-generator-bram/flanger_effect_generator_bram.txt"
 
 # If true, an additional MIF file representation is generated
 MIF_FILE = True
 # Number of bits in MIF representation
-MIF_BITS = 16
+MIF_BITS = 10
 
 # If true, an additional file with human-readable representation of samples will be produced
 HUMAN_READABLE_FILE = True
@@ -38,13 +38,13 @@ ADDRESS_OFFSET = 0
 WAVE_TYPE = 'sin'
 
 # Coefficient that the sample is multiplied before being converted to the file representation
-GAIN = 2**15 - 1
+GAIN = 2**9 - 1
 
 # Shift of the generated wave (before gain)
 SHIFT = 0
 
 # Number of samples to be generated
-SAMPLES_NUM = 5513
+SAMPLES_NUM = 257
 
 # Function's argument's range to be taken into account (both sides inclusively)
 ARG_RANGE = (0, math.pi / 2)

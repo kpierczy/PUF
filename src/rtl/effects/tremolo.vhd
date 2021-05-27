@@ -26,133 +26,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
-use work.tremolo.all;
-use work.generator.all;
-
--- ------------------------------------------------------------- Entity --------------------------------------------------------------
-
-entity TremoloEffectGenerator is
-    generic(
-        -- Generator type
-        GENERATOR_TYPE : Generator;
-        -- Width of the single sample
-        SAMPLE_WIDTH : Positive;
-
-        -- ==================== QuadrupletGenerator-specific ==================== --
-
-        -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-        BRAM_SAMPLES_NUM : Positive := 1024;
-        -- Width of the address port
-        BRAM_ADDR_WIDTH : Positive := 10;
-        -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
-        BRAM_LATENCY : Positive := 0
-    );
-    port(
-        -- Reset signal (asynchronous)
-        reset_n : in Std_logic;
-        -- System clock
-        clk : in Std_logic;
-
-        -- Signal starting generation of the next sample (active high)
-        en_in : in Std_logic;
-        -- Data lines
-        sample_out : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
-    );
-end entity TremoloEffectGenerator;
-
-
--- ---------------------------------------------------------- Architecture -----------------------------------------------------------
-
-architecture logic of TremoloEffectGenerator is
-
-
-    -- BRAM declaration
-    component TremoloEffectBram
-    port (
-        clka : in Std_logic;
-        rsta : in Std_logic;
-        ena : in Std_logic;
-        wea : in Std_logic_vector(0 downto 0);
-        addra : in Std_logic_vector(BRAM_ADDR_WIDTH - 1 downto 0);
-        dina : in Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
-        douta : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
-    );
-    end component;
-
-    -- Address lines
-    signal bram_addr_in : Std_logic_vector(BRAM_ADDR_WIDTH - 1 downto 0);
-    -- Data lines
-    signal bram_data_out : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
-    -- Enable line
-    signal bram_en_in : Std_logic;
-
-begin
-
-    -- Logic of the generator using TriangleGenerator entity
-    triangleGeneratorCase : if GENERATOR_TYPE = TRIANGLE generate
-
-        -- Generator's instance
-        triangleGeneratorInstance : entity work.TriangleGenerator
-        generic map (
-            MODE         => UNSIGNED_OUT,
-            SAMPLE_WIDTH => SAMPLE_WIDTH
-        )
-        port map (
-            reset_n    => reset_n,
-            clk        => clk,
-            en_in      => en_in,
-            sample_out => sample_out
-        );
-
-    end generate;
-
-    -- Logic of the generator using QuadrupletGenerator entity
-    quadrupletGeneratorCase : if GENERATOR_TYPE = QUADRUPLET generate
-
-        -- Generator's instance
-        quadrupletGeneratorInstance : entity work.QuadrupletGenerator
-        generic map (
-            MODE         => UNSIGNED_OUT,
-            SAMPLES_NUM  => BRAM_SAMPLES_NUM,
-            SAMPLE_WIDTH => SAMPLE_WIDTH,
-            ADDR_WIDTH   => BRAM_ADDR_WIDTH,
-            BRAM_LATENCY => BRAM_LATENCY
-        )
-        port map (
-            reset_n       => reset_n,
-            clk           => clk,
-            en_in         => en_in,
-            sample_out    => sample_out,
-            busy_out      => open,
-            bram_addr_out => bram_addr_in,
-            bram_data_in  => bram_data_out,
-            bram_en_out   => bram_en_in
-        );
-
-        -- BRAM instance
-        quadrupletGeneratorBramInstance : TremoloEffectBram
-        PORT MAP (
-            clka => clk,
-            rsta => not(reset_n),
-            ena => bram_en_in,
-            wea => (others => '0'),
-            addra => bram_addr_in,
-            dina => (others => '0'),
-            douta => bram_data_out
-        );
-
-    end generate;    
-
-end architecture logic;
-
--- ===================================================================================================================================
--- ------------------------------------------------------- Generator's wrapper --------------------------------------------------------
--- ===================================================================================================================================
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-library work;
 use work.edge.all;
 use work.tremolo.all;
 
@@ -181,21 +54,47 @@ entity TremoloEffect is
 
         -- ====================== Modulation's parameters ======================= --
 
+        -- -------------------------------------------------------------------------
+        -- `depth_in` input is treated as value from range <0, 1), so it's width
+        -- impacts only granularity of the modulation wave's 'depth'. Value '10'
+        -- provides 1/1024 granularity that should be enough for smooth adjustments.
+        -- -------------------------------------------------------------------------
+
         -- Width of the modulation wave's depth input
-        MODULATION_DEPTH_WIDTH : Positive;
+        MODULATION_DEPTH_WIDTH : Positive := 10;
+
+        -- -------------------------------------------------------------------------
+        -- Width of the modulating wave's sample determines also number of `steps`
+        -- per single period as a simple counter-based triangle generator was used
+        -- Assuming that sound samples come in the 16-bit format a 10-bit generator
+        -- should be anough to smoothly modulate the signal.
+        -- -------------------------------------------------------------------------
+
         -- Width of the modulating sample
-        MODULATION_SAMPLE_WIDTH : Positive;
+        MODULATION_SAMPLE_WIDTH : Positive := 10;
+
+        -- -------------------------------------------------------------------------
+        -- With 10-bit modulating samples the and 100MHz system clock the maximal
+        -- frequenc of the modulating wave is ~97kHz. To assure minimal frequency
+        -- about ~1Hz (0.74Hz) the 17-bit `modulation_ticks_per_sample` input
+        -- is required
+        -- -------------------------------------------------------------------------
+
         -- Width of the `ticks_per_sample` input
-        MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive;
+        MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive := 17;
 
         -- ==================== QuadrupletGenerator-specific ==================== --
 
+        -- -------------------------------------------------------------------------
+        -- BRAM-base termolo's generator is not used at the moment
+        -- -------------------------------------------------------------------------
+
         -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-        BRAM_SAMPLES_NUM : Positive := 1024;
+        BRAM_SAMPLES_NUM : Positive := 1;
         -- Width of the address port
-        BRAM_ADDR_WIDTH : Positive := 10;
+        BRAM_ADDR_WIDTH : Positive := 1;
         -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
-        BRAM_LATENCY : Positive := 0
+        BRAM_LATENCY : Positive := 1
 
     );
     port(
@@ -510,5 +409,132 @@ begin
         end process;
 
     end generate;
+
+end architecture logic;
+
+-- ===================================================================================================================================
+-- ------------------------------------------------------- Generator's wrapper --------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+library work;
+use work.tremolo.all;
+use work.generator.all;
+
+-- ------------------------------------------------------------- Entity --------------------------------------------------------------
+
+entity TremoloEffectGenerator is
+    generic(
+        -- Generator type
+        GENERATOR_TYPE : Generator;
+        -- Width of the single sample
+        SAMPLE_WIDTH : Positive;
+
+        -- ==================== QuadrupletGenerator-specific ==================== --
+
+        -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
+        BRAM_SAMPLES_NUM : Positive := 1024;
+        -- Width of the address port
+        BRAM_ADDR_WIDTH : Positive := 10;
+        -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
+        BRAM_LATENCY : Positive := 0
+    );
+    port(
+        -- Reset signal (asynchronous)
+        reset_n : in Std_logic;
+        -- System clock
+        clk : in Std_logic;
+
+        -- Signal starting generation of the next sample (active high)
+        en_in : in Std_logic;
+        -- Data lines
+        sample_out : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
+    );
+end entity TremoloEffectGenerator;
+
+
+-- ---------------------------------------------------------- Architecture -----------------------------------------------------------
+
+architecture logic of TremoloEffectGenerator is
+
+
+    -- BRAM declaration
+    component TremoloEffectBram
+    port (
+        clka : in Std_logic;
+        rsta : in Std_logic;
+        ena : in Std_logic;
+        wea : in Std_logic_vector(0 downto 0);
+        addra : in Std_logic_vector(BRAM_ADDR_WIDTH - 1 downto 0);
+        dina : in Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+        douta : out Std_logic_vector(SAMPLE_WIDTH - 1 downto 0)
+    );
+    end component;
+
+    -- Address lines
+    signal bram_addr_in : Std_logic_vector(BRAM_ADDR_WIDTH - 1 downto 0);
+    -- Data lines
+    signal bram_data_out : Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+    -- Enable line
+    signal bram_en_in : Std_logic;
+
+begin
+
+    -- Logic of the generator using TriangleGenerator entity
+    triangleGeneratorCase : if GENERATOR_TYPE = TRIANGLE generate
+
+        -- Generator's instance
+        triangleGeneratorInstance : entity work.TriangleGenerator
+        generic map (
+            MODE         => UNSIGNED_OUT,
+            SAMPLE_WIDTH => SAMPLE_WIDTH
+        )
+        port map (
+            reset_n    => reset_n,
+            clk        => clk,
+            en_in      => en_in,
+            sample_out => sample_out
+        );
+
+    end generate;
+
+    -- Logic of the generator using QuadrupletGenerator entity
+    quadrupletGeneratorCase : if GENERATOR_TYPE = QUADRUPLET generate
+
+        -- Generator's instance
+        quadrupletGeneratorInstance : entity work.QuadrupletGenerator
+        generic map (
+            MODE         => UNSIGNED_OUT,
+            SAMPLES_NUM  => BRAM_SAMPLES_NUM,
+            SAMPLE_WIDTH => SAMPLE_WIDTH,
+            ADDR_WIDTH   => BRAM_ADDR_WIDTH,
+            BRAM_LATENCY => BRAM_LATENCY
+        )
+        port map (
+            reset_n       => reset_n,
+            clk           => clk,
+            en_in         => en_in,
+            sample_out    => sample_out,
+            busy_out      => open,
+            bram_addr_out => bram_addr_in,
+            bram_data_in  => bram_data_out,
+            bram_en_out   => bram_en_in
+        );
+
+        -- BRAM instance
+        quadrupletGeneratorBramInstance : TremoloEffectBram
+        PORT MAP (
+            clka => clk,
+            rsta => not(reset_n),
+            ena => bram_en_in,
+            wea => (others => '0'),
+            addra => bram_addr_in,
+            dina => (others => '0'),
+            douta => bram_data_out
+        );
+
+    end generate;    
 
 end architecture logic;

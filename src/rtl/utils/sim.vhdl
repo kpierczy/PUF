@@ -519,7 +519,151 @@ package body sim is
 end package body sim;
 
 -- ===================================================================================================================================
--- ------------------------------------------------------------ Entities -------------------------------------------------------------
+-- ------------------------------------------------------- Pipe's testbench --------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
+library work;
+use work.sim.all;
+
+-- General entity for effect's testing
+entity PipeTestbench is
+    generic(
+
+        -- ========================= General parameters ========================= --
+
+        -- Frequency of the system clock
+        SYS_CLK_HZ : Positive;
+        -- Count of system clock's ticks that the reset signal is active at the beggining
+        SYS_RESET_TICKS : Positive;
+        -- Width of the samples
+        SAMPLE_WIDTH : Positive := 16;
+
+        -- ===================== Input signal's parameters ====================== --
+
+        -- Type of the input wave (available: [sin/sin_rand])
+        INPUT_TYPE : String;
+
+        -- Frequency of the input signal 
+        INPUT_FREQ_HZ : Positive;
+        -- Amplitude of the input wave in normalized range <0;1>
+        INPUT_AMPLITUDE : Real;
+        -- Sampling frequency of the input signal
+        INPUT_SAMPLING_FREQ_HZ : Positive;
+
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real
+
+    );
+    port(
+
+        -- ========================== System signals ============================ --
+
+        -- Reset signal
+        reset_n : out Std_logic := '0';
+        -- System clock
+        clk : out Std_logic := '0';
+
+        -- ===================== Common effects' interface ====================== --
+
+        -- Module's enable signal
+        enable_in : out Std_logic := '1';
+        -- Input sample
+        sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+        -- Signal for new sample on input
+        valid_in : out Std_logic := '0'
+    );
+end entity PipeTestbench;
+
+architecture logic of PipeTestbench is
+
+    -- Peiord of the system clock
+    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;  
+
+    -- Negation of module's enable signal
+    signal disable_in : Std_logic := '1';
+
+    -- Real-converted input signal
+    signal sample_tmp : Real;
+
+begin
+
+    -- =================================================================================
+    -- System signals
+    -- =================================================================================
+
+    -- Clock signal
+    clock_tb(CLK_PERIOD, clk);
+
+    -- Reset signal
+    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
+
+    -- Control `enable_in` signal with it's negation
+    enable_in <= not(disable_in);    
+
+    -- =================================================================================
+    -- Input signals' generation 
+    -- =================================================================================
+    
+    -- Generate input signal : sin
+    inputSin : if INPUT_TYPE = "sin" generate
+        -- Transform wave into the signed value using saturation
+        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
+        -- Generate sinusoidal wave
+        generate_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
+        );
+    end generate;
+
+    -- Generate input signal : sin with uniform noise
+    inputSinRand : if INPUT_TYPE = "sin_rand" generate
+        -- Transform wave into the signed value using saturation
+        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
+        -- Generate sinusoidal with white noise wave
+        generate_random_sin(
+            SYS_CLK_HZ   => SYS_CLK_HZ,
+            FREQUENCY_HZ => INPUT_FREQ_HZ,
+            PHASE_SHIFT  => 0.0,
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            OFFSET       => 0.0,
+            RNG_MEAN     => INPUT_RAND_MEAN * Real(2**(SAMPLE_WIDTH - 1) - 1),
+            RNG_STD_DEV  => INPUT_RAND_STD_DEV * Real(2**(SAMPLE_WIDTH - 1) - 1),
+            reset_n      => reset_n,
+            clk          => clk,
+            wave         => sample_tmp
+        );
+    end generate;
+
+    -- =================================================================================
+    -- Input periodic flags
+    -- =================================================================================
+
+    -- Generate sampling pulse 
+    generate_clk(
+        SYS_CLK_HZ       => SYS_CLK_HZ,
+        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
+        reset_n          => reset_n,
+        clk              => clk,
+        wave             => valid_in
+    );
+
+end architecture logic;
+
+
+-- ===================================================================================================================================
+-- ------------------------------------------------------- Effect's testbench --------------------------------------------------------
 -- ===================================================================================================================================
 
 library ieee;
@@ -600,57 +744,30 @@ architecture logic of EffectTestbench is
 begin
 
     -- =================================================================================
-    -- System signals
+    -- Internal bench
     -- =================================================================================
 
-    -- Clock signal
-    clock_tb(CLK_PERIOD, clk);
+    -- Instance of the common features regarding guitar effects' testing
+    pipeTestbenchInstance: entity work.PipeTestbench(logic)
+    generic map (
+        SYS_CLK_HZ             => SYS_CLK_HZ,
+        SYS_RESET_TICKS        => SYS_RESET_TICKS,
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        INPUT_TYPE             => INPUT_TYPE,
+        INPUT_FREQ_HZ          => INPUT_FREQ_HZ,
+        INPUT_AMPLITUDE        => INPUT_AMPLITUDE,
+        INPUT_SAMPLING_FREQ_HZ => INPUT_SAMPLING_FREQ_HZ,
+        INPUT_RAND_MEAN        => INPUT_RAND_MEAN,
+        INPUT_RAND_STD_DEV     => INPUT_RAND_STD_DEV
+    )
+    port map (
+        reset_n   => reset_n,
+        clk       => clk,
+        enable_in => enable_in,
+        sample_in => sample_in,
+        valid_in  => valid_in
+    );
 
-    -- Reset signal
-    reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
-
-    -- Control `enable_in` signal with it's negation
-    enable_in <= not(disable_in);    
-
-    -- =================================================================================
-    -- Input signals' generation 
-    -- =================================================================================
-    
-    -- Generate input signal : sin
-    inputSin : if INPUT_TYPE = "sin" generate
-        -- Transform wave into the signed value using saturation
-        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
-        -- Generate sinusoidal wave
-        generate_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQ_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
-            OFFSET       => 0.0,
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_tmp
-        );
-    end generate;
-
-    -- Generate input signal : sin with uniform noise
-    inputSinRand : if INPUT_TYPE = "sin_rand" generate
-        -- Transform wave into the signed value using saturation
-        sample_in <= real_to_signed_sat(sample_tmp, SAMPLE_WIDTH);
-        -- Generate sinusoidal with white noise wave
-        generate_random_sin(
-            SYS_CLK_HZ   => SYS_CLK_HZ,
-            FREQUENCY_HZ => INPUT_FREQ_HZ,
-            PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
-            OFFSET       => 0.0,
-            RNG_MEAN     => INPUT_RAND_MEAN * Real(2**(SAMPLE_WIDTH - 1) - 1),
-            RNG_STD_DEV  => INPUT_RAND_STD_DEV * Real(2**(SAMPLE_WIDTH - 1) - 1),
-            reset_n      => reset_n,
-            clk          => clk,
-            wave         => sample_tmp
-        );
-    end generate;
 
     -- =================================================================================
     -- Input periodic flags
@@ -665,14 +782,5 @@ begin
         clk              => clk,
         wave             => disable_in
     );   
-
-    -- Generate sampling pulse 
-    generate_clk(
-        SYS_CLK_HZ       => SYS_CLK_HZ,
-        FREQUENCY_HZ     => INPUT_SAMPLING_FREQ_HZ,
-        reset_n          => reset_n,
-        clk              => clk,
-        wave             => valid_in
-    );
 
 end architecture logic;

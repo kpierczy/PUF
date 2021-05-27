@@ -81,7 +81,7 @@
 3. Other Options:
     - Load Init File: `Disabled`
 
-# ChorusEffectBram
+# FlangerEffectBram
 
 1. Basic:
     - Interface type: `Native`
@@ -97,7 +97,7 @@
 3. Other Options:
     - Load Init File: `Disabled`
 
-# ChorusEffectGeneratorBram
+# FlangerEffectGeneratorBram
 
 1. Basic:
     - Interface type: `Native`
