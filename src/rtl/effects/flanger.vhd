@@ -26,106 +26,36 @@ entity FlangerEffect is
 
         -- ====================== Effect-specific parameters ==================== --
 
-        -- -------------------------------------------------------------------------
-        -- Strength level of the delayed summand is treated as value in range
-        -- <0, 1), so width of his input impacts only granularity of the setup.
-        -- 12-bit (1/4096 precision) should be enough to provide smooth control
-        -- over the delayed samples' level.
-        -- -------------------------------------------------------------------------
-
         -- Width of the @in attenuation_in port
-        STRENGTH_WIDTH : Positive := 12;
-
-        -- -------------------------------------------------------------------------
-        -- As described below (@see 'Generator's BRAM parameters'), the internal
-        -- LFO (Low Frequency Oscilator) generates numbers in range <0, 1024>. The
-        -- `depth_in` input always scales this amplitude in range <0, 1) so it's
-        -- width impacts only granularity of the setup. 10-bit width corresponding
-        -- tot width of the LFO's samples is the highest reasonable setup that
-        -- can be set in such configuration.
-        -- -------------------------------------------------------------------------
+        STRENGTH_WIDTH : Positive;
 
         -- Width of the @in depth port
-        DEPTH_WIDTH : Positive := 10;
-
-        -- -------------------------------------------------------------------------
-        -- @improtant: For the flanger effect to function properly it is crucial
-        --    to relatively small frequencies of the LFO generator so that 
-        --    osilcations in the delay's values doe not create too much distrotions
-        --    in the input signal. Assuming 100MHz system clock and 1024 samples
-        --    per LFO's period, the 20-bit input will quarante frequencies in range
-        --    ~ <0.1, 97k> Hz. In fact the higher frequenies (in practice above 4Hz)
-        --    should not be used but it is user's duty to properly scale 
-        --    `ticks_per_delay_sample_in` input.
-        -- 
-        -- @note: f_LFO[t] = f_SYS / A_LFO / (ticks[t] + 1), where
-        --
-        --     - f_LFO[t] - frequency of the LFO in [Hz]
-        --     - f_SYS - system clock's frequency in [Hz]
-        --     - A_LFO - amplitude of the LFO generator
-        --     - ticks[t] - value on the `ticks_per_delay_sample_in` input
-        --
-        -- -------------------------------------------------------------------------
+        DEPTH_WIDTH : Positive;
 
         -- Width of the `ticks_per_delay_sample_in` input
-        TICKS_PER_DELAY_SAMPLE_WIDTH : Positive := 20;
+        TICKS_PER_DELAY_SAMPLE_WIDTH : Positive;
 
         -- ===================== Delay line's BRAM parameters =================== --
 
-        -- ---------------------------------------------------------------------- --
-        -- The first of incorporated BRAM blocks is used within the delay line 
-        -- buffering historical sample in a FIFO maner (as a ring buffer). For
-        -- 'flanger' effects delays in range of 10-25 ms are recommended to keep
-        -- signals distrortions on reasonable level. Assuming 44100Hz sampling
-        -- rate buffer should be able to hold about 662 samples (15 ms delay). 
-        -- With 16-bit samples 1324-byte buffer is needed. A single 18Kb block RAM
-        -- module can hold up to 1024 samples (yes, it's less than 18Kbits). To 
-        -- effectively utilize a block, the full sapce is used. Should delay's 
-        -- amplitude turn out too high, it can  always be limited by constraints 
-        -- put on the `depth_in` input's values.
-        -- ---------------------------------------------------------------------- --
-
         -- Number of usable cells in delay line's BRAM
-        DELAY_BRAM_SAMPLES_NUM : Positive := 1024;
+        DELAY_BRAM_SAMPLES_NUM : Positive;
         -- Width of the delay line's address port
-        DELAY_BRAM_ADDR_WIDTH : Positive := 10;
-
-        -- ---------------------------------------------------------------------- --
-        -- To isolate latencies of the BRAM Core's internal multiplexers a single
-        -- output register stage was used. It extends BRAM latency to 2 cycles.
-        -- ---------------------------------------------------------------------- --
+        DELAY_BRAM_ADDR_WIDTH : Positive;
 
         -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
-        DELAY_BRAM_LATENCY : Positive := 2;
+        DELAY_BRAM_LATENCY : Positive;
 
         -- ====================== Generator's BRAM parameters =================== --
 
-        -- ---------------------------------------------------------------------- --
-        -- Granularity of the delay-modulating wave's samples should be able to 
-        -- address (more or less) all delayed samples in the delay line. Taking
-        -- into account above-mentioned size of the delay buffer, the 10-bit
-        -- wave was choosen. With such granularity all samples can be addressed. 
-        -- That translates to about 23ms of delay.
-        --
-        -- As quadruplet generator is used internally (@see QuadrupletGenerator)
-        -- it is enough to hold first 257 samples of the sinusoid wave from range
-        -- <0, 2pi>.
-        -- ---------------------------------------------------------------------- --
-
         -- Number of usable cells in delay line's BRAM
-        GENERATOR_BRAM_SAMPLES_NUM : Positive := 257;
+        LFO_BRAM_SAMPLES_NUM : Positive;
         -- Width of the delay line's address port
-        GENERATOR_BRAM_ADDR_WIDTH : Positive := 9;
+        LFO_BRAM_ADDR_WIDTH : Positive;
         -- Width of the data hold in the generator's BRAM
-        GENERATOR_BRAM_DATA_WIDTH : Positive := 10;
-
-        -- ---------------------------------------------------------------------- --
-        -- To isolate latencies of the BRAM Core's internal multiplexers a single
-        -- output register stage was used. It extends BRAM latency to 2 cycles.
-        -- ---------------------------------------------------------------------- --
+        LFO_BRAM_DATA_WIDTH : Positive;
 
         -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
-        GENERATOR_BRAM_LATENCY : Positive := 2     
+        LFO_BRAM_LATENCY : Positive
     );
     port(
         -- ====================== Effects' common interface ===================== --
@@ -200,7 +130,7 @@ architecture logic of FlangerEffect is
     -- =========================== Constants ============================ --
 
     -- Width of the `delay` input of the internal delay line (delay magnitude)
-    constant DELAY_WIDTH : Positive := GENERATOR_BRAM_DATA_WIDTH;
+    constant DELAY_WIDTH : Positive := LFO_BRAM_DATA_WIDTH;
 
     -- ======================= Input-derivations ======================== --
 
@@ -280,7 +210,7 @@ architecture logic of FlangerEffect is
     -- `Enable` input f the generator starting generation of the next wave's sample
     signal generator_en_in : Std_logic;
     -- Output data from the wave generator
-    signal generator_sample_out : Std_logic_vector(GENERATOR_BRAM_DATA_WIDTH - 1 downto 0);
+    signal generator_sample_out : Std_logic_vector(LFO_BRAM_DATA_WIDTH - 1 downto 0);
 
 
     -- ==================== Generator's BRAM's signals ================= --
@@ -292,18 +222,18 @@ architecture logic of FlangerEffect is
         rsta : in Std_logic;
         ena : in Std_logic;
         wea : in Std_logic_vector(0 downto 0);
-        addra : in Std_logic_vector(GENERATOR_BRAM_ADDR_WIDTH - 1 downto 0);
-        dina : in Std_logic_vector(GENERATOR_BRAM_DATA_WIDTH - 1 downto 0);
-        douta : out Std_logic_vector(GENERATOR_BRAM_DATA_WIDTH - 1 downto 0)
+        addra : in Std_logic_vector(LFO_BRAM_ADDR_WIDTH - 1 downto 0);
+        dina : in Std_logic_vector(LFO_BRAM_DATA_WIDTH - 1 downto 0);
+        douta : out Std_logic_vector(LFO_BRAM_DATA_WIDTH - 1 downto 0)
     );
     end component;
 
     -- BRAM's reset signal
     signal generator_bram_reset : Std_logic;
     -- Address lines
-    signal generator_bram_addr_in : Std_logic_vector(GENERATOR_BRAM_ADDR_WIDTH - 1 downto 0);
+    signal generator_bram_addr_in : Std_logic_vector(LFO_BRAM_ADDR_WIDTH - 1 downto 0);
     -- Data lines
-    signal generator_bram_data_out : Std_logic_vector(GENERATOR_BRAM_DATA_WIDTH - 1 downto 0);
+    signal generator_bram_data_out : Std_logic_vector(LFO_BRAM_DATA_WIDTH - 1 downto 0);
     -- Enable/write enable lines
     signal generator_bram_en_in : Std_logic;
     signal generator_bram_wen_in : std_logic_vector(0 downto 0);    
@@ -327,7 +257,7 @@ begin
         report 
             "[FlangerEffect] Result of the multiplication of depth input and internally generated wave" &
             "cannot be wider than delay line's BRAM address port! (" & 
-            "DEPTH_WIDTH + GENERATOR_BRAM_DATA_WIDTH - DEPTH_TWO_POW_DIV: " & Positive'Image(DELAY_WIDTH) & ", " &
+            "DEPTH_WIDTH + LFO_BRAM_DATA_WIDTH - DEPTH_TWO_POW_DIV: " & Positive'Image(DELAY_WIDTH) & ", " &
             "BRAM_ADDR_WIDTH: " & Positive'Image(DELAY_BRAM_ADDR_WIDTH) & ")" &
             "Please modify parameters."
     severity error;
@@ -413,10 +343,10 @@ begin
     quadrupletGeneratorInstance : entity work.QuadrupletGenerator
     generic map (
         MODE         => UNSIGNED_OUT,
-        SAMPLES_NUM  => GENERATOR_BRAM_SAMPLES_NUM,
-        SAMPLE_WIDTH => GENERATOR_BRAM_DATA_WIDTH,
-        ADDR_WIDTH   => GENERATOR_BRAM_ADDR_WIDTH,
-        BRAM_LATENCY => GENERATOR_BRAM_LATENCY
+        SAMPLES_NUM  => LFO_BRAM_SAMPLES_NUM,
+        SAMPLE_WIDTH => LFO_BRAM_DATA_WIDTH,
+        ADDR_WIDTH   => LFO_BRAM_ADDR_WIDTH,
+        BRAM_LATENCY => LFO_BRAM_LATENCY
     )
     port map (
         reset_n       => reset_n,
@@ -610,7 +540,7 @@ begin
     process(reset_n, clk) is
 
         -- Generator's latency
-        constant GENERATOR_LATENCY : Positive := GENERATOR_BRAM_LATENCY + 1; 
+        constant GENERATOR_LATENCY : Positive := LFO_BRAM_LATENCY + 1; 
         -- Counter of input samples since last wave sample's update
         variable ticks_since_last_modulation_sample : Unsigned(TICKS_PER_DELAY_SAMPLE_WIDTH - 1 downto 0);
         -- Multiplexer choosing apropriate value of ticks per modulation's sample

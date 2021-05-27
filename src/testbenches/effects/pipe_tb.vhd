@@ -17,7 +17,7 @@ use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
-entity ClippingEffectTb is
+entity EffectsPipeTb is
     generic(
 
         -- ============================================= Common parameters ============================================== --
@@ -132,11 +132,11 @@ entity ClippingEffectTb is
         -- Toggle frequency of the frequency-like parameter of the flanger's LFO
         FLANGER_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0     
     );
-end entity ClippingEffectTb;
+end entity EffectsPipeTb;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------
 
-architecture logic of ClippingEffectTb is
+architecture logic of EffectsPipeTb is
     
         -- ====================== Effects' common interface ===================== --
 
@@ -151,9 +151,9 @@ architecture logic of ClippingEffectTb is
         signal valid_out : Std_logic;
 
         -- Input sample
-        signal sample_in : Signed;
+        signal sample_in : Signed(SAMPLE_WIDTH - 1 downto 0);
         -- Gained sample
-        signal sample_out : Signed;
+        signal sample_out : Signed(SAMPLE_WIDTH - 1 downto 0);
 
         -- ===================== Clipping effect's interface ==================== --
 

@@ -34,7 +34,7 @@ use work.tremolo.all;
 entity TremoloEffect is
 
     -- =======================================================================================
-    -- @ Note: When triangle generator us used, parameter MODULATION_SAMPLE_WIDTH not only
+    -- @ Note: When triangle generator us used, parameter LFO_SAMPLE_WIDTH not only
     --     determines range of the modulating values, but also period of the modulating wave.
     --
     -- @ Note: Tremolo's depth is a parameter used to calculate definite shape of the 
@@ -54,34 +54,14 @@ entity TremoloEffect is
 
         -- ====================== Modulation's parameters ======================= --
 
-        -- -------------------------------------------------------------------------
-        -- `depth_in` input is treated as value from range <0, 1), so it's width
-        -- impacts only granularity of the modulation wave's 'depth'. Value '10'
-        -- provides 1/1024 granularity that should be enough for smooth adjustments.
-        -- -------------------------------------------------------------------------
-
         -- Width of the modulation wave's depth input
-        MODULATION_DEPTH_WIDTH : Positive := 10;
-
-        -- -------------------------------------------------------------------------
-        -- Width of the modulating wave's sample determines also number of `steps`
-        -- per single period as a simple counter-based triangle generator was used
-        -- Assuming that sound samples come in the 16-bit format a 10-bit generator
-        -- should be anough to smoothly modulate the signal.
-        -- -------------------------------------------------------------------------
+        DEPTH_WIDTH : Positive;
 
         -- Width of the modulating sample
-        MODULATION_SAMPLE_WIDTH : Positive := 10;
-
-        -- -------------------------------------------------------------------------
-        -- With 10-bit modulating samples the and 100MHz system clock the maximal
-        -- frequenc of the modulating wave is ~97kHz. To assure minimal frequency
-        -- about ~1Hz (0.74Hz) the 17-bit `modulation_ticks_per_sample` input
-        -- is required
-        -- -------------------------------------------------------------------------
+        LFO_SAMPLE_WIDTH : Positive;
 
         -- Width of the `ticks_per_sample` input
-        MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive := 17;
+        TICKS_PER_SAMPLE_WIDTH : Positive;
 
         -- ==================== QuadrupletGenerator-specific ==================== --
 
@@ -121,9 +101,9 @@ entity TremoloEffect is
         -- =================== Effect's-specific interface ================== --
 
         -- Tremolo's depth aprameter (treated as value in <0, 1) range)
-        depth_in : in Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);
+        depth_in : in Unsigned(DEPTH_WIDTH - 1 downto 0);
         -- Number of system clock's ticks per modulation sample (minus 1)
-        ticks_per_modulation_sample_in : in Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0)
+        ticks_per_modulation_sample_in : in Unsigned(TICKS_PER_SAMPLE_WIDTH - 1 downto 0)
 
     );
 
@@ -138,7 +118,7 @@ architecture logic of TremoloEffect is
     signal new_sample : Std_logic;
 
     -- Internal partial result of modulation
-    signal modulation : Unsigned(MODULATION_SAMPLE_WIDTH - 1 downto 0);    
+    signal modulation : Unsigned(LFO_SAMPLE_WIDTH - 1 downto 0);    
     -- Internal result of modulation
     signal result : Signed(SAMPLE_WIDTH - 1 downto 0);    
     
@@ -147,13 +127,13 @@ architecture logic of TremoloEffect is
     -- Input sample buffer
     signal sample_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
     -- Depth value buffer
-    signal depth_buf : Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);
+    signal depth_buf : Unsigned(DEPTH_WIDTH - 1 downto 0);
 
     -- ======================== Signals for the internal LFO ======================== --
 
     -- Modulation sample buffer
-    signal generator_sample_raw : Std_logic_vector(MODULATION_SAMPLE_WIDTH - 1 downto 0);
-    signal generator_sample : Unsigned(MODULATION_SAMPLE_WIDTH - 1 downto 0);
+    signal generator_sample_raw : Std_logic_vector(LFO_SAMPLE_WIDTH - 1 downto 0);
+    signal generator_sample : Unsigned(LFO_SAMPLE_WIDTH - 1 downto 0);
     -- Generator's input initializing generation of the next sample (active high)
     signal generator_enable : Std_logic;
 
@@ -180,7 +160,7 @@ begin
     tremoloEffectGeneratorInstance: entity work.TremoloEffectGenerator(logic)
     generic map (
         GENERATOR_TYPE   => GENERATOR_TYPE,
-        SAMPLE_WIDTH     => MODULATION_SAMPLE_WIDTH,
+        SAMPLE_WIDTH     => LFO_SAMPLE_WIDTH,
         BRAM_SAMPLES_NUM => BRAM_SAMPLES_NUM,
         BRAM_ADDR_WIDTH  => BRAM_ADDR_WIDTH,
         BRAM_LATENCY     => BRAM_LATENCY
@@ -206,15 +186,15 @@ begin
     --    - d(t) : depth actual value
     --    - d'max : max value of depth
     modulation <= resize(
-          (2**MODULATION_SAMPLE_WIDTH - 1) - (generator_sample * depth_buf) / 2**MODULATION_DEPTH_WIDTH,
-    MODULATION_SAMPLE_WIDTH);
+          (2**LFO_SAMPLE_WIDTH - 1) - (generator_sample * depth_buf) / 2**DEPTH_WIDTH,
+    LFO_SAMPLE_WIDTH);
 
     -- Compute result sample as y(t) = (x(t) * m(t)) / m'max
     --    - m(t) : modulating wave
     --    - d(t) : depth actual value
     --    - d'max : max value of depth
     result <= resize(
-        sample_buf * Signed(resize(modulation, MODULATION_SAMPLE_WIDTH + 1)) / 2**MODULATION_SAMPLE_WIDTH,
+        sample_buf * Signed(resize(modulation, LFO_SAMPLE_WIDTH + 1)) / 2**LFO_SAMPLE_WIDTH,
     SAMPLE_WIDTH);
 
     -- Output state machine
@@ -312,7 +292,7 @@ begin
         process(reset_n, clk) is
 
             -- Counter of input samples since last wave sample's update
-            variable ticks_since_last_modulation_sample : unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
+            variable ticks_since_last_modulation_sample : unsigned(TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
    
         begin
 
@@ -322,7 +302,7 @@ begin
                 -- Keep generator disabled
                 generator_enable <= '0';
                 -- Reset internal counter
-                ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
 
             -- Regular generation
             elsif(rising_edge(clk)) then
@@ -336,12 +316,12 @@ begin
                         ticks_since_last_modulation_sample := ticks_since_last_modulation_sample + 1;
                     else
                         generator_enable <= '1';
-                        ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                        ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
                     end if;
 
                 -- Else, reset internal counter
                 else 
-                    ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                    ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
                 end if;
 
             end if;
@@ -362,10 +342,10 @@ begin
             -- Generator's latency
             constant GENERATOR_LATENCY : Positive := BRAM_LATENCY + 1; 
             -- Counter of input samples since last wave sample's update
-            variable ticks_since_last_modulation_sample : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
+            variable ticks_since_last_modulation_sample : Unsigned(TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
             -- Multiplexer choosing apropriate value of ticks per modulation's sample
             variable ticks_per_modulation_sample_actual : 
-                Unsigned(maximum(MODULATION_TICKS_PER_SAMPLE_WIDTH, 3) - 1 downto 0);
+                Unsigned(maximum(TICKS_PER_SAMPLE_WIDTH, 3) - 1 downto 0);
 
         begin
 
@@ -375,7 +355,7 @@ begin
                 -- Keep generator disabled
                 generator_enable <= '0';
                 -- Reset internal counter
-                ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
 
             -- Regular generation
             elsif(rising_edge(clk)) then
@@ -395,12 +375,12 @@ begin
                         ticks_since_last_modulation_sample := ticks_since_last_modulation_sample + 1;
                     else
                         generator_enable <= '1';
-                        ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                        ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
                     end if;
 
                 -- Else, reset internal counter
                 else 
-                    ticks_since_last_modulation_sample := to_unsigned(0, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+                    ticks_since_last_modulation_sample := to_unsigned(0, TICKS_PER_SAMPLE_WIDTH);
                     ticks_per_modulation_sample_actual := to_unsigned(GENERATOR_LATENCY, ticks_per_modulation_sample_actual'length);
                 end if;
 

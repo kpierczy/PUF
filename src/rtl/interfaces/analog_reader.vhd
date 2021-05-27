@@ -57,7 +57,7 @@ architecture logic of AnalogSequenceReader is
     -- `DRP Data Ready` line
     signal drdy_out : Std_logic;
     -- `DRP Output Data` lines mapped to the bits representing samples' values
-    signal do_out : std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+    signal do_out : std_logic_vector(XADC_SAMPLE_WIDTH - 1 downto 0);
     -- `Start conversion` line
     signal convst_in : Std_logic;
     -- External MUX select lines (mapped to range <0x0; 0xF>)

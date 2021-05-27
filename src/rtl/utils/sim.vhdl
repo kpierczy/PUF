@@ -601,9 +601,6 @@ begin
     -- Reset signal
     reset_tb(SYS_RESET_TICKS * CLK_PERIOD, reset_n);
 
-    -- Control `enable_in` signal with it's negation
-    enable_in <= not(disable_in);    
-
     -- =================================================================================
     -- Input signals' generation 
     -- =================================================================================
@@ -761,11 +758,12 @@ begin
     port map (
         reset_n   => reset_n,
         clk       => clk,
-        enable_in => enable_in,
         sample_in => sample_in,
         valid_in  => valid_in
     );
 
+    -- Control `enable_in` signal with it's negation
+    enable_in <= not(disable_in);    
 
     -- =================================================================================
     -- Input periodic flags

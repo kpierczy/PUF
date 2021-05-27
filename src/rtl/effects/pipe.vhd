@@ -14,15 +14,19 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+library work;
+use work.tremolo.all;
+use work.pipe_config.all;
+use work.xadc.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
 entity EffectsPipe is
     generic(
         -- Width of samples
-        SAMPLE_WIDTH : Positive range 2 to Positive'High;
+        SAMPLE_WIDTH : Positive range 2 to Positive'High := CONFIG_SAMPLE_WIDTH;
         -- Width of the parameter inputs
-        PARAM_WIDTH : Positive
+        PARAM_WIDTH : Positive := XADC_SAMPLE_WIDTH
     );
     port(
 
@@ -39,9 +43,9 @@ entity EffectsPipe is
         valid_out : out Std_logic;
 
         -- Input sample
-        sample_in : in Signed;
+        sample_in : in Signed(SAMPLE_WIDTH - 1 downto 0);
         -- Gained sample
-        sample_out : out Signed;
+        sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
 
         -- ===================== Clipping effect's interface ==================== --
 
@@ -97,9 +101,9 @@ architecture logic of EffectsPipe is
     signal clipping_valid_in, clipping_valid_out : Std_logic;
 
     -- Gain input
-    signal clipping_gain_internal_in : Unsigned;
+    signal clipping_gain_internal_in : Unsigned(CONFIG_CLIPPING_GAIN_WIDTH - 1 downto 0);
     -- Saturation level (for absolute value of the signal)
-    signal clipping_saturation_internal_in : Unsigned;
+    signal clipping_saturation_internal_in : Unsigned(SAMPLE_WIDTH - 2 downto 0);
     
     -- ====================== Tremolo effect's interface ==================== --
 
@@ -109,9 +113,9 @@ architecture logic of EffectsPipe is
     signal tremolo_valid_in, tremolo_valid_out : Std_logic;
 
     -- Tremolo's depth aprameter (treated as value in <0, 1) range)
-    signal tremolo_depth_internal_in : Unsigned;
+    signal tremolo_depth_internal_in : Unsigned(CONFIG_TREMOLO_DEPTH_WIDTH - 1 downto 0);
     -- Number of system clock's ticks per modulation sample (minus 1)
-    signal tremolo_ticks_per_modulation_sample_internal_in : Unsigned;
+    signal tremolo_ticks_per_modulation_sample_internal_in : Unsigned(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
     
     -- ======================= Delay effect's interface ===================== --
 
@@ -121,9 +125,9 @@ architecture logic of EffectsPipe is
     signal delay_valid_in, delay_valid_out : Std_logic;
 
     -- Depth level (index of the delayed sample being summed with the input)
-    signal delay_depth_internal_in : Unsigned;
+    signal delay_depth_internal_in : Unsigned(CONFIG_DELAY_DEPTH_WIDTH - 1 downto 0);
     -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-    signal delay_attenuation_internal_in : Unsigned;
+    signal delay_attenuation_internal_in : Unsigned(CONFIG_DELAY_ATTENUATION_WIDTH - 1 downto 0);
     
     -- ====================== Flanger effect's interface ==================== --
 
@@ -133,11 +137,11 @@ architecture logic of EffectsPipe is
     signal flanger_valid_in, flanger_valid_out : Std_logic;
 
     -- Depth level
-    signal flanger_depth_internal_in : Unsigned;
+    signal flanger_depth_internal_in : Unsigned(CONFIG_FLANGER_DEPTH_WIDTH - 1 downto 0);
     -- Strength of the flanger effect
-    signal flanger_strength_internal_in : Unsigned;
+    signal flanger_strength_internal_in : Unsigned(CONFIG_FLANGER_STRENGTH_WIDTH - 1 downto 0);
     -- Delay's modulation frequency
-    signal flanger_ticks_per_delay_sample_internal_in : Unsigned;
+    signal flanger_ticks_per_delay_sample_internal_in : Unsigned(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH - 1 downto 0);
 
     -- ========================= Auxiliary functions ======================== --
 
@@ -184,7 +188,9 @@ begin
     -- Clipping effect module
     clippingEffectInstance : entity work.ClippingEffect
     generic map (
-        SAMPLE_WIDTH => SAMPLE_WIDTH
+        SAMPLE_WIDTH => SAMPLE_WIDTH,
+        GAIN_WIDTH   => CONFIG_CLIPPING_GAIN_WIDTH,
+        TWO_POW_DIV  => CONFIG_CLIPPING_TWO_POW_DIV
     )
     port map (
         reset_n       => reset_n,
@@ -201,7 +207,11 @@ begin
     -- Tremolo effect module
     tremoloEffectInstance : entity work.TremoloEffect
     generic map (
-        SAMPLE_WIDTH => SAMPLE_WIDTH
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        GENERATOR_TYPE         => CONFIG_TREMOLO_GENERATOR_TYPE,
+        DEPTH_WIDTH            => CONFIG_TREMOLO_DEPTH_WIDTH,
+        LFO_SAMPLE_WIDTH       => CONFIG_TREMOLO_LFO_SAMPLE_WIDTH,
+        TICKS_PER_SAMPLE_WIDTH => CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH
     )
     port map (
         reset_n                        => reset_n,
@@ -218,7 +228,12 @@ begin
     -- Delay effect module
     delayEffectInstance : entity work.DelayEffect
     generic map (
-        SAMPLE_WIDTH      => SAMPLE_WIDTH
+        SAMPLE_WIDTH      => SAMPLE_WIDTH,
+        ATTENUATION_WIDTH => CONFIG_DELAY_ATTENUATION_WIDTH,
+        DEPTH_WIDTH       => CONFIG_DELAY_DEPTH_WIDTH,
+        BRAM_SAMPLES_NUM  => CONFIG_DELAY_BRAM_SAMPLES_NUM,
+        BRAM_ADDR_WIDTH   => CONFIG_DELAY_BRAM_ADDR_WIDTH,
+        BRAM_LATENCY      => CONFIG_DELAY_BRAM_LATENCY
     )
     port map (
         reset_n        => reset_n,
@@ -235,7 +250,17 @@ begin
     -- Flanger effect module
     flangerEffectInstance : entity work.FlangerEffect
     generic map (
-        SAMPLE_WIDTH => SAMPLE_WIDTH
+        SAMPLE_WIDTH                 => SAMPLE_WIDTH,
+        STRENGTH_WIDTH               => CONFIG_FLANGER_STRENGTH_WIDTH,
+        DEPTH_WIDTH                  => CONFIG_FLANGER_DEPTH_WIDTH,
+        TICKS_PER_DELAY_SAMPLE_WIDTH => CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH,
+        DELAY_BRAM_SAMPLES_NUM       => CONFIG_FLANGER_DELAY_BRAM_SAMPLES_NUM,
+        DELAY_BRAM_ADDR_WIDTH        => CONFIG_FLANGER_DELAY_BRAM_ADDR_WIDTH,
+        DELAY_BRAM_LATENCY           => CONFIG_FLANGER_DELAY_BRAM_LATENCY,
+        LFO_BRAM_SAMPLES_NUM         => CONFIG_FLANGER_LFO_BRAM_SAMPLES_NUM,
+        LFO_BRAM_ADDR_WIDTH          => CONFIG_FLANGER_LFO_BRAM_ADDR_WIDTH,
+        LFO_BRAM_DATA_WIDTH          => CONFIG_FLANGER_LFO_BRAM_DATA_WIDTH,
+        LFO_BRAM_LATENCY             => CONFIG_FLANGER_LFO_BRAM_LATENCY
     )
     port map (
         reset_n                   => reset_n,
@@ -283,7 +308,8 @@ begin
     --    will be driven from the common source (i.e. XADC measurements of potentiometers).
     --    On the other hand, these parameters have various meaning and so can have various
     --    length. Underlaying section scales parameters so that the input ranges (assummed
-    --    that it is used in full scale) can be mapped to proper effect's parameters' ranges.
+    --    that they are used in full scale) can be mapped to proper effect's parameters' 
+    --    ranges.
     -- ---------------------------------------------------------------------------------------
 
     -- ==================================== Clipping effect's interface =================================== --
@@ -295,18 +321,22 @@ begin
 
     -- External input wider than interna;
     clipping_gain_internal_in <= resize_from_right(
-        clipping_gain_internal_in'length, clipping_gain_in
+        CONFIG_CLIPPING_GAIN_WIDTH, clipping_gain_in
     );
     
     -- ---------------------------------------------------------------------------------------
-    -- Saturation level was inverted so that `more saturation` means `more clipping`. 
+    -- Saturation level was inverted by completion (to 1) of the input signal so that `more
+    -- saturation` means `more clipping`. 
+    --
     -- Moreover external input is mapped to the internal one in such way that maximum
     -- saturation cuts top 1/4 of the samples' range (i.e. 1/2 of the `saturation_in` range
-    -- as it's width is one bit less as the samples' width)
+    -- as it's width is one bit less as the samples' width). It is accomplished by setting
+    -- MSB of the saturation level to '0' and mapping MSBs of the external signal to the
+    -- Rest of the parameter's bits.
     -- ---------------------------------------------------------------------------------------   
 
     clipping_saturation_internal_in <= complete(b"0" & resize_from_right(
-        clipping_saturation_internal_in'length, clipping_saturation_in
+        CONFIG_SAMPLE_WIDTH - 2, clipping_saturation_in
     ));
     
     -- ============================= Tremolo effect's interface =========================== --
@@ -317,7 +347,7 @@ begin
     -- ---------------------------------------------------------------------------------------
     
     tremolo_depth_internal_in <= resize_from_right(
-        tremolo_depth_internal_in'length, tremolo_depth_in
+        CONFIG_TREMOLO_DEPTH_WIDTH, tremolo_depth_in
     );
 
     -- ---------------------------------------------------------------------------------------
@@ -347,11 +377,8 @@ begin
 
     tremoloLFOSumInstance : entity work.sumUnsignedSat
     port map (
-        a_in       => to_unsigned(2**10, tremolo_ticks_per_modulation_sample_internal_in'length),
-        b_in       => resize_from_right(
-                        tremolo_ticks_per_modulation_sample_internal_in'length,
-                        complete(tremolo_frequency_in)
-                      ),
+        a_in       => to_unsigned(2**10, CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH),
+        b_in       => resize_from_right(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH, complete(tremolo_frequency_in)),
         result_out => tremolo_ticks_per_modulation_sample_internal_in,
         err_out    => open
     );
@@ -365,7 +392,7 @@ begin
     -- ---------------------------------------------------------------------------------------
 
     delay_attenuation_internal_in <= resize_from_right(
-        delay_attenuation_internal_in'length, delay_attenuation_in
+        CONFIG_DELAY_ATTENUATION_WIDTH, delay_attenuation_in
     );
 
     -- ---------------------------------------------------------------------------------------
@@ -375,7 +402,7 @@ begin
     -- ---------------------------------------------------------------------------------------
 
     delay_depth_internal_in <= resize_from_right(
-        delay_depth_internal_in'length, delay_depth_in
+        CONFIG_DELAY_DEPTH_WIDTH, delay_depth_in
     );
     
     -- ============================= Flanger effect's interface =========================== --
@@ -387,7 +414,7 @@ begin
     -- ---------------------------------------------------------------------------------------
     
     flanger_strength_internal_in <= resize_from_right(
-        flanger_strength_internal_in'length, flanger_strength_in
+        CONFIG_FLANGER_STRENGTH_WIDTH, flanger_strength_in
     );
 
     -- ---------------------------------------------------------------------------------------
@@ -398,7 +425,7 @@ begin
     -- ---------------------------------------------------------------------------------------
 
     flanger_depth_internal_in <= resize_from_right(
-        flanger_depth_internal_in'length, flanger_depth_in
+        CONFIG_FLANGER_DEPTH_WIDTH, flanger_depth_in
     );
 
     -- ---------------------------------------------------------------------------------------
@@ -430,11 +457,8 @@ begin
 
     flangerLFOSumInstance : entity work.sumUnsignedSat
     port map (
-        a_in       => to_unsigned(2**15, flanger_ticks_per_delay_sample_internal_in'length),
-        b_in       => resize_from_right(
-                        flanger_ticks_per_delay_sample_internal_in'length,
-                        complete(flanger_frequency_in)
-                      ),
+        a_in       => to_unsigned(2**15, CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH),
+        b_in       => resize_from_right(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH,complete(flanger_frequency_in)),
         result_out => flanger_ticks_per_delay_sample_internal_in,
         err_out    => open
     );

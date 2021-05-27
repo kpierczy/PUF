@@ -91,22 +91,4 @@ begin
         rx          => rx
     );
 
-    -- Clipping effect
-    clipper : entity work.ClippingEffect(logic)
-    generic map(
-        SAMPLE_WIDTH => SAMPLE_WIDTH,
-        GAIN_WIDTH   => GAIN_WIDTH,
-        TWO_POW_DIV  => TWO_POW_DIV
-    )
-    port map(
-        reset_n       => reset_n,
-        clk           => clk,
-        valid_in      => valid_in,
-        valid_out     => valid_out,
-        sample_in     => sample_in,
-        gain_in       => gain_in,
-        saturation_in => saturation_in,
-        sample_out    => sample_out
-    );
-
 end architecture;

@@ -25,42 +25,20 @@ entity DelayEffect is
 
         -- ====================== Effect-specific parameters ==================== --
 
-        -- -------------------------------------------------------------------------
-        -- Attenuation level of the delayed summand is treated as value in range
-        -- <0, 5), so width of his input impacts only granularity of the setup.
-        -- 12-bit (1/4096 precision) should be enough to provide smooth control
-        -- over the delayed samples' level.
-        -- -------------------------------------------------------------------------
-
         -- Width of the @in attenuation_in port
-        ATTENUATION_WIDTH : Positive := 12;
-
-        -- -------------------------------------------------------------------------
-        -- Delay line's BRAM was configured to use 20 blocks of 36Kb BRAM. It can
-        -- hold up to 45_000 samples what corresponds to slightly more than 1 second
-        -- of recording. To address al versions of the delayed samplls the 16-bit
-        -- address is required and so 16-bit `depth_in` input
-        -- -------------------------------------------------------------------------
+        ATTENUATION_WIDTH : Positive;
 
         -- Width of the @in depth port
-        DEPTH_WIDTH : Positive := 16;
+        DEPTH_WIDTH : Positive;
 
         -- =========================== BRAM parameters ========================== --
 
-        -- -------------------------------------------------------------------------
-        -- Delay's block ram was composed of 20 blocks containing 36Kb each (not 
-        -- 36KB). It can hold samples from withing about 1 second of recording 
-        -- (assuming 16-bit samples). In the BRAM core the output register was used
-        -- to isolate latencies of the blocks-choosing multiplexers what extended
-        -- latency to 2 cycles.
-        -- -------------------------------------------------------------------------
-
         -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-        BRAM_SAMPLES_NUM : Positive := 45_000;
+        BRAM_SAMPLES_NUM : Positive;
         -- Width of the address port
-        BRAM_ADDR_WIDTH : Positive := 16;
+        BRAM_ADDR_WIDTH : Positive;
         -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
-        BRAM_LATENCY : Positive := 2
+        BRAM_LATENCY : Positive
     );
     port(
         -- ====================== Effects' common interface ===================== --
