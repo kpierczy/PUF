@@ -20,10 +20,10 @@ use ieee.numeric_std.all;
 package xadc is
 
     -- Sample's width (to not use raw '12')
-    constant SAMPLE_WIDTH :Positive := 12;
+    constant XADC_SAMPLE_WIDTH :Positive := 12;
 
     -- Array of XADC's samples vectors' array
-    type xadcSamplesArray is array(natural range <>) of Std_logic_vector(SAMPLE_WIDTH - 1 downto 0);
+    type xadcSamplesArray is array(natural range <>) of Std_logic_vector(XADC_SAMPLE_WIDTH - 1 downto 0);
 
 end package xadc;
 

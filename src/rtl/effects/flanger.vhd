@@ -75,9 +75,9 @@ entity FlangerEffect is
 
         -- Enable signal (when module's disabled, samples are not modified) (active high)
         enable_in : in Std_logic;
-        -- `New input sample` signal (rising-edge-active)
+        -- `New input sample` signal
         valid_in : in Std_logic;
-        -- `Output sample ready` signal (rising-edge-active)
+        -- `Output sample ready` signal
         valid_out : out Std_logic;
 
         -- Input sample
