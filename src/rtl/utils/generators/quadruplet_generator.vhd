@@ -35,7 +35,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
-use work.generator.all;
+use work.generator_pkg.all;
 
 entity QuadrupletGenerator is
     generic(

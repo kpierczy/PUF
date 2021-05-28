@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
 use work.uart.all;
-use work.sim.all;
 
 entity main is
     

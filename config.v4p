@@ -1,0 +1,8 @@
+{
+    "excludes": {
+        "doc/**/*.vhd" : true,
+        "workdir/**/*.vhd" : true,
+        "workdir/**/*.vhdl" : true,
+        "workdir/**/*.vho" : true
+   }
+}

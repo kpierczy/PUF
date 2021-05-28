@@ -21,7 +21,6 @@ entity ClippingEffect is
     generic(
         -- Width of the input sample
         SAMPLE_WIDTH : Positive range 2 to Positive'high;
-
         -- Width of the gain input
         GAIN_WIDTH : Positive;
         -- Index of the 2's power that the multiplication's result is divided by before saturation

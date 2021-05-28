@@ -23,7 +23,7 @@ entity EffectsPipeTb is
         -- ============================================= Common parameters ============================================== --
 
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
@@ -45,14 +45,14 @@ entity EffectsPipeTb is
 
         
         -- Type of the input wave (available: [sin/sin_rand])
-        INPUT_TYPE : String := "sin_rand";
+        INPUT_TYPE : String := "sin";
 
         -- Frequency of the input signal 
-        INPUT_FREQ_HZ : Natural := 1000;
+        INPUT_FREQ_HZ : Natural := 440;
         -- Amplitude of the input wave in normalized range <0; 1>
-        INPUT_AMPLITUDE : Real := 0.5;
+        INPUT_AMPLITUDE : Real := 0.4;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
 
         -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
         INPUT_RAND_MEAN : Real := 0.0;
@@ -70,67 +70,85 @@ entity EffectsPipeTb is
         -- ---------- Clipping effect's parameters' stimulus signals ------------ --
 
         -- Clippign effect's state
-        CLIPPING_ENABLE : Std_logic := '0';
+        CLIPPING_ENABLE : Std_logic := '1';
 
         -- Amplitudes of gain values in normalized range <0; 1>
-        CLIPPING_GAIN_AMPLITUDE : Real := 0.75;
+        CLIPPING_GAIN_AMPLITUDE : Real := 0.8;
         -- Frequency of the changes of `gain_in` input
-        CLIPPING_GAIN_TOGGLE_FREQ_HZ : Natural := 120;
+        CLIPPING_GAIN_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        CLIPPING_GAIN_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of clips in normalized range <0; 1>
-        CLIPPING_SATURATION_AMPLITUDE : Real := 0.75;
+        CLIPPING_SATURATION_AMPLITUDE : Real := 0.8;
         -- Frequency of the changes of `saturation_in` input
-        CLIPPING_SATURATION_TOGGLE_FREQ_HZ : Natural := 100;
+        CLIPPING_SATURATION_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        CLIPPING_SATURATION_PHASE_SHIFT : Real := 0.0;
 
         -- ----------- Tremolo effect's parameters' stimulus signals ------------ --
 
         -- Tremolo effect's state
-        TREMOLO_ENABLE : Std_logic := '0';
+        TREMOLO_ENABLE : Std_logic := '1';
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1>
         TREMOLO_DEPTH_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `depth_in` input
         TREMOLO_DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        TREMOLO_DEPTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of the frequency-like parameter of the tremolo's LFO
-        TREMOLO_FREQUENCY_AMPLITUDE : Real := 0.0;
+        TREMOLO_FREQUENCY_AMPLITUDE : Real := 0.8;
         -- Toggle frequency of the frequency-like parameter of the tremolo's LFO
         TREMOLO_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        TREMOLO_FREQUENCY_PHASE_SHIFT : Real := 0.0;
 
         -- ------------ Delay effect's parameters' stimulus signals ------------- --
 
         -- Delay effect's state
-        DELAY_ENABLE : Std_logic := '0';
+        DELAY_ENABLE : Std_logic := '1';
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1> ('1.0' is (BRAM_SAMPLES_NUM - 1))
-        DELAY_DEPTH_AMPLITUDE : Real := 0.5;
+        DELAY_DEPTH_AMPLITUDE : Real := 0.01;
         -- Frequency of the changes of `depth_in` input
         DELAY_DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        DELAY_DEPTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of `attenuation_in` input's values in normalized range <0; 1>
         DELAY_ATTENUATION_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `attenuation_in` input
         DELAY_ATTENUATION_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        DELAY_ATTENUATION_PHASE_SHIFT : Real := 0.0;
 
         -- ----------- Flanger effect's parameters' stimulus signals ------------ --
 
         -- Delay effect's state
-        FLANGER_ENABLE : Std_logic := '0';
+        FLANGER_ENABLE : Std_logic := '1';
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1> ('1.0' is (BRAM_SAMPLES_NUM - 1))
-        FLANGER_DEPTH_AMPLITUDE : Real := 0.5;
+        FLANGER_DEPTH_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `depth_in` input
         FLANGER_DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        FLANGER_DEPTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of `strength_in` input's values in normalized range <0; 1>
         FLANGER_STRENGTH_AMPLITUDE : Real := 0.5;
         -- Frequency of the changes of `strength_in` input
         FLANGER_STRENGTH_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        FLANGER_STRENGTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of the frequency-like parameter of the flanger's LFO
-        FLANGER_FREQUENCY_AMPLITUDE : Real := 0.0;
+        FLANGER_FREQUENCY_AMPLITUDE : Real := 0.5;
         -- Toggle frequency of the frequency-like parameter of the flanger's LFO
-        FLANGER_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0     
+        FLANGER_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Phase shift of the parameter in normalized <0,1> range
+        FLANGER_FREQUENCY_PHASE_SHIFT : Real := 0.0
     );
 end entity EffectsPipeTb;
 
@@ -279,6 +297,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => CLIPPING_GAIN_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => CLIPPING_GAIN_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(CLIPPING_GAIN_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -287,13 +306,14 @@ begin
     );
 
     -- Transform signal into the signed value using saturation
-    clipping_saturation_in <= real_to_unsigned_sat(clipping_saturation_tmp, PARAM_WIDTH - 1);
+    clipping_saturation_in <= real_to_unsigned_sat(clipping_saturation_tmp, PARAM_WIDTH);
     -- Generate saturation signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => CLIPPING_SATURATION_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => CLIPPING_SATURATION_PHASE_SHIFT,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(CLIPPING_SATURATION_AMPLITUDE * (2**(PARAM_WIDTH - 1) - 1))),
+        MAX_VAL      => Real(Integer(CLIPPING_SATURATION_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
         wave         => clipping_saturation_tmp
@@ -309,6 +329,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => TREMOLO_DEPTH_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => TREMOLO_DEPTH_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(TREMOLO_DEPTH_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -322,6 +343,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => TREMOLO_FREQUENCY_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => TREMOLO_FREQUENCY_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(TREMOLO_FREQUENCY_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -339,6 +361,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => DELAY_ATTENUATION_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => DELAY_ATTENUATION_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(DELAY_ATTENUATION_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -352,6 +375,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => DELAY_DEPTH_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => DELAY_DEPTH_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(DELAY_DEPTH_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -369,6 +393,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => FLANGER_STRENGTH_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => FLANGER_STRENGTH_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(FLANGER_STRENGTH_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -382,6 +407,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => FLANGER_DEPTH_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => FLANGER_DEPTH_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(FLANGER_DEPTH_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
@@ -395,6 +421,7 @@ begin
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => FLANGER_FREQUENCY_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => FLANGER_FREQUENCY_PHASE_SHIFT,
         MIN_VAL      => 0.0,
         MAX_VAL      => Real(Integer(FLANGER_FREQUENCY_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,

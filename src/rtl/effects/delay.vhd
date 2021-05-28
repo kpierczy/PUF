@@ -57,7 +57,7 @@ entity DelayEffect is
 
         -- Input sample
         sample_in : in Signed(SAMPLE_WIDTH - 1 downto 0);
-        -- Gained sample
+        -- Output sample
         sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
 
         -- ===================== Effect's-specific interface ==================== --

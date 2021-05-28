@@ -17,7 +17,7 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
 use work.sim.all;
-use work.generator.all;
+use work.generator_pkg.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 

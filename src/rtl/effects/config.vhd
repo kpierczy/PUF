@@ -12,7 +12,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
-use work.tremolo.all;
+use work.generator_pkg.all;
 
 -- ------------------------------------------------------------ Package --------------------------------------------------------------
 
@@ -42,7 +42,7 @@ package pipe_config is
     -- -------------------------------------------------------------------------
 
     -- Generator type
-    constant CONFIG_TREMOLO_GENERATOR_TYPE : Generator := TRIANGLE;
+    constant CONFIG_TREMOLO_GENERATOR_TYPE : GeneratorType := TRIANGLE;
 
     -- -------------------------------------------------------------------------
     -- `depth_in` input is treated as value from range <0, 1), so it's width
@@ -209,4 +209,4 @@ package pipe_config is
     -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
     constant CONFIG_FLANGER_LFO_BRAM_LATENCY : Positive := 2;
 
-end package;
+end package pipe_config;

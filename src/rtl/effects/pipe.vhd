@@ -15,8 +15,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
-use work.tremolo.all;
 use work.pipe_config.all;
+use work.generator_pkg.all;
 use work.xadc.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
@@ -114,6 +114,8 @@ architecture logic of EffectsPipe is
 
     -- Tremolo's depth aprameter (treated as value in <0, 1) range)
     signal tremolo_depth_internal_in : Unsigned(CONFIG_TREMOLO_DEPTH_WIDTH - 1 downto 0);
+    -- Scaled and resized version of the `tremolo_frequency_in`
+    signal tremolo_frequency_scaled : unsigned(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
     -- Number of system clock's ticks per modulation sample (minus 1)
     signal tremolo_ticks_per_modulation_sample_internal_in : Unsigned(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
     
@@ -140,6 +142,8 @@ architecture logic of EffectsPipe is
     signal flanger_depth_internal_in : Unsigned(CONFIG_FLANGER_DEPTH_WIDTH - 1 downto 0);
     -- Strength of the flanger effect
     signal flanger_strength_internal_in : Unsigned(CONFIG_FLANGER_STRENGTH_WIDTH - 1 downto 0);
+    -- Scaled and resized version of the `flanger_frequency_in`
+    signal flanger_frequency_scaled : unsigned(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH - 1 downto 0);
     -- Delay's modulation frequency
     signal flanger_ticks_per_delay_sample_internal_in : Unsigned(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH - 1 downto 0);
 
@@ -375,10 +379,13 @@ begin
     --  maximum frequency by 2^N factor.
     -- ---------------------------------------------------------------------------------------
 
+    -- Scale and resize `tremolo_frequency_in`
+    tremolo_frequency_scaled <= resize_from_right(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH, complete(tremolo_frequency_in));
+
     tremoloLFOSumInstance : entity work.sumUnsignedSat
     port map (
         a_in       => to_unsigned(2**10, CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH),
-        b_in       => resize_from_right(CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH, complete(tremolo_frequency_in)),
+        b_in       => tremolo_frequency_scaled,
         result_out => tremolo_ticks_per_modulation_sample_internal_in,
         err_out    => open
     );
@@ -455,10 +462,13 @@ begin
     --  maximum frequency by 2^N factor.
     -- ---------------------------------------------------------------------------------------
 
+    -- Scale and resize `flanger_frequency_in`
+    flanger_frequency_scaled <= resize_from_right(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH, complete(flanger_frequency_in));       
+
     flangerLFOSumInstance : entity work.sumUnsignedSat
     port map (
         a_in       => to_unsigned(2**15, CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH),
-        b_in       => resize_from_right(CONFIG_FLANGER_TICKS_PER_DELAY_SAMPLE_WIDTH,complete(flanger_frequency_in)),
+        b_in       => flanger_frequency_scaled,
         result_out => flanger_ticks_per_delay_sample_internal_in,
         err_out    => open
     );

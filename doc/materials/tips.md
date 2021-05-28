@@ -1,1 +1,2 @@
 1. `set_property file_type {VHDL 2008} [get_files -filter {FILE_TYPE == VHDL}]` - Change all files in the project to VHDL 2008
+2. `<package> is not compiled in the 'xil_defaultlib'` problem can be solved by moving package's file higher in the hierarchy under Sources > Libraries > Design Sources > * > xil_defaultlib

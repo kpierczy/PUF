@@ -15,7 +15,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
 use work.edge.all;
-use work.generator.all;
+use work.generator_pkg.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
@@ -74,7 +74,7 @@ entity FlangerEffect is
 
         -- Input sample
         sample_in : in Signed(SAMPLE_WIDTH - 1 downto 0);
-        -- Gained sample
+        -- Output sample
         sample_out : out Signed(SAMPLE_WIDTH - 1 downto 0);
 
         -- ===================== Effect's-specific interface ==================== --
@@ -235,8 +235,7 @@ architecture logic of FlangerEffect is
     -- Data lines
     signal generator_bram_data_out : Std_logic_vector(LFO_BRAM_DATA_WIDTH - 1 downto 0);
     -- Enable/write enable lines
-    signal generator_bram_en_in : Std_logic;
-    signal generator_bram_wen_in : std_logic_vector(0 downto 0);    
+    signal generator_bram_en_in : Std_logic;   
 
     -- ======================= Auxiliary mechanisms ==================== --
 
@@ -370,7 +369,7 @@ begin
         clka  => clk,
         rsta  => generator_bram_reset,
         ena   => generator_bram_en_in,
-        wea   => generator_bram_wen_in,
+        wea   => (others => '0'),
         addra => generator_bram_addr_in,
         dina  => (others => '0'),
         douta => generator_bram_data_out

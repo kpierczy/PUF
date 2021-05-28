@@ -148,9 +148,11 @@ package sim is
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
         constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift (in normalized range (0;1>)
+        constant PHASE_SHIFT : Real := 0.0;
         -- Wave's min val
         constant MIN_VAL : Real;
-        -- Wave's max val
+        -- Wave's max val (wave's value when FREQUENCY_HZ is 0)
         constant MAX_VAL : Real;
         -- System reset
         signal reset_n : in std_logic;
@@ -483,9 +485,11 @@ package body sim is
         constant SYS_CLK_HZ : Positive;
         -- Wave's frequency
         constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift in normalized <0,1>
+        constant PHASE_SHIFT : Real := 0.0;
         -- Wave's min val
         constant MIN_VAL : Real;
-        -- Wave's max val
+        -- Wave's max val (wave's value when FREQUENCY_HZ is 0)
         constant MAX_VAL : Real;
         -- System reset
         signal reset_n : in std_logic;
@@ -504,6 +508,14 @@ package body sim is
 
         -- When 0 frequency, just push amplitude value
         if(FREQUENCY_HZ /= 0) then
+
+            -- Set initial value
+            wave <= rand_real(MIN_VAL, MAX_VAL);
+
+            -- Wait for phase shift
+            wait for 1 sec / FREQUENCY_HZ * PHASE_SHIFT;
+
+            -- Change value and wait infinitely
             loop
                 wait until falling_edge(clk);
                 wave <= rand_real(MIN_VAL, MAX_VAL);

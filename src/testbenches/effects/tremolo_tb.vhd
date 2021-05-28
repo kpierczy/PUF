@@ -13,7 +13,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 library work;
-use work.tremolo.all;
+use work.generator_pkg.all;
 use work.sim.all;
 
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
@@ -33,16 +33,16 @@ entity TremoloEffectTb is
         -- ====================== Effect generator's type ======================= --
 
         -- Generator type
-        GENERATOR_TYPE : Generator := TRIANGLE;
+        GENERATOR_TYPE : GeneratorType := TRIANGLE;
 
         -- ====================== Modulation's parameters ======================= --
 
         -- Width of the modulation wave's depth input
-        MODULATION_DEPTH_WIDTH : Positive := 16;
+        DEPTH_WIDTH : Positive := 16;
         -- Width of the modulating sample
-        MODULATION_SAMPLE_WIDTH : Positive := 8;
+        LFO_SAMPLE_WIDTH : Positive := 8;
         -- Width of the `ticks_per_sample` input
-        MODULATION_TICKS_PER_SAMPLE_WIDTH : Positive := 16;
+        TICKS_PER_SAMPLE_WIDTH : Positive := 16;
 
         -- ==================== QuadrupletGenerator-specific ==================== --
 
@@ -127,9 +127,9 @@ architecture logic of TremoloEffectTb is
     -- ================= Specific effects's interface ================= --
 
     -- Tremolo's depth aprameter (treated as value in <0, 1) range)
-    signal depth_in : Unsigned(MODULATION_DEPTH_WIDTH - 1 downto 0);  
+    signal depth_in : Unsigned(DEPTH_WIDTH - 1 downto 0);  
     -- Modulation's frequency-controlling input
-    signal ticks_per_modulation_sample_in : Unsigned(MODULATION_TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
+    signal ticks_per_modulation_sample_in : Unsigned(TICKS_PER_SAMPLE_WIDTH - 1 downto 0);
 
     -- ====================== Auxiliary signals ====================== --
 
@@ -147,13 +147,13 @@ architecture logic of TremoloEffectTb is
     begin
         -- If modulation signal is NOT given with the particulat frequency
         if(MODULATION_FREQ_HZ_AMPLITUDE < 0) then
-            return Real(Integer(MODULATION_TICKS_PER_SAMPLE_AMPLITUDE * (2**MODULATION_TICKS_PER_SAMPLE_WIDTH - 1)));
+            return Real(Integer(MODULATION_TICKS_PER_SAMPLE_AMPLITUDE * (2**TICKS_PER_SAMPLE_WIDTH - 1)));
         -- Else
         else
             -- If triangle generator used
             if(GENERATOR_TYPE = TRIANGLE) then
                 return Real(Integer(
-                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / 2**(MODULATION_SAMPLE_WIDTH + 1)));
+                    SYS_CLK_HZ / MODULATION_FREQ_HZ_AMPLITUDE / 2**(LFO_SAMPLE_WIDTH + 1)));
             -- If quadruplet generator used
             else
                 return Real(Integer(
@@ -201,14 +201,14 @@ begin
     -- Instance of the tremolo effect's module
     tremoloEffectInstance: entity work.TremoloEffect
     generic map (
-        GENERATOR_TYPE                    => GENERATOR_TYPE,
-        SAMPLE_WIDTH                      => SAMPLE_WIDTH,
-        MODULATION_SAMPLE_WIDTH           => MODULATION_SAMPLE_WIDTH,
-        MODULATION_DEPTH_WIDTH            => MODULATION_DEPTH_WIDTH,
-        MODULATION_TICKS_PER_SAMPLE_WIDTH => MODULATION_TICKS_PER_SAMPLE_WIDTH,
-        BRAM_SAMPLES_NUM                  => BRAM_SAMPLES_NUM,
-        BRAM_ADDR_WIDTH                   => BRAM_ADDR_WIDTH,
-        BRAM_LATENCY                      => BRAM_LATENCY
+        GENERATOR_TYPE         => GENERATOR_TYPE,
+        SAMPLE_WIDTH           => SAMPLE_WIDTH,
+        LFO_SAMPLE_WIDTH       => LFO_SAMPLE_WIDTH,
+        DEPTH_WIDTH            => DEPTH_WIDTH,
+        TICKS_PER_SAMPLE_WIDTH => TICKS_PER_SAMPLE_WIDTH,
+        BRAM_SAMPLES_NUM       => BRAM_SAMPLES_NUM,
+        BRAM_ADDR_WIDTH        => BRAM_ADDR_WIDTH,
+        BRAM_LATENCY           => BRAM_LATENCY
     )
     port map (
         reset_n                        => reset_n,
@@ -227,20 +227,20 @@ begin
     -- =================================================================================
 
     -- Transform signal into the signed value using saturation
-    depth_in <= real_to_unsigned_sat(depth_tmp, MODULATION_DEPTH_WIDTH);
+    depth_in <= real_to_unsigned_sat(depth_tmp, DEPTH_WIDTH);
     -- Generate `depth` signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => MODULATION_TOGGLE_DEPTH_FREQ_HZ,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(MODULATION_DEPTH_AMPLITUDE * (2**MODULATION_DEPTH_WIDTH - 1))),
+        MAX_VAL      => Real(Integer(MODULATION_DEPTH_AMPLITUDE * (2**DEPTH_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
         wave         => depth_tmp
     );
 
     -- Transform signal into the signed value using saturation
-    ticks_per_modulation_sample_in <= real_to_unsigned_sat(ticks_per_modulation_sample_tmp, MODULATION_TICKS_PER_SAMPLE_WIDTH);
+    ticks_per_modulation_sample_in <= real_to_unsigned_sat(ticks_per_modulation_sample_tmp, TICKS_PER_SAMPLE_WIDTH);
     -- Generate `modulation_ticks_per_sample_in` signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,

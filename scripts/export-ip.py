@@ -34,4 +34,11 @@ ip_sources = ipSourceDirPath.rglob('*.xci')
 
 # Copy files to the output directory
 for path in ip_sources:
-    copyfile(str(path), os.path.join(str(outDirPath), path.name))
+
+    ipOutDirPath = outDirPath.joinpath(path.name.split('.')[0])
+
+    # Create folder for the IP
+    Path(ipOutDirPath).mkdir(exist_ok=True)
+
+    # Copy file to the outpt directory
+    copyfile(str(path), os.path.join(str(ipOutDirPath), path.name))
