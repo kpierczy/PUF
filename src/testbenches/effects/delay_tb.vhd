@@ -29,8 +29,8 @@ entity DelayEffectTb is
         -- Width of the input sample
         SAMPLE_WIDTH : Positive := 16;
 
-        -- Width of the @in attenuation_in port
-        ATTENUATION_WIDTH : Positive := 8;
+        -- Width of the @in delay_gain_in port
+        DELAY_GAIN_WIDTH : Positive := 8;
         -- Width of the @in depth port
         DEPTH_WIDTH : Positive := 8;
 
@@ -74,10 +74,10 @@ entity DelayEffectTb is
         -- Frequency of the changes of `depth_in` input
         DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
 
-        -- Amplitudes of `attenuation_in` input's values in normalized range <0; 1>
-        ATTENUATION_AMPLITUDE : Real := 1.0;
-        -- Frequency of the changes of `attenuation_in` input
-        ATTENUATION_TOGGLE_FREQ_HZ : Natural := 0
+        -- Amplitudes of `delay_gain_in` input's values in normalized range <0; 1>
+        DELAY_GAIN_AMPLITUDE : Real := 1.0;
+        -- Frequency of the changes of `delay_gain_in` input
+        DELAY_GAIN_TOGGLE_FREQ_HZ : Natural := 0
 
     );
 end entity DelayEffectTb;
@@ -109,15 +109,15 @@ architecture logic of DelayEffectTb is
 
     -- Depth level (index of the delayed sample being summed with the input)
     signal depth_in : unsigned(DEPTH_WIDTH - 1 downto 0);
-    -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-    signal attenuation_in : unsigned(ATTENUATION_WIDTH - 1 downto 0);
+    -- Gain level pf the delayed summant (treated as value in <0,0.5) range)
+    signal delay_gain_in : unsigned(DELAY_GAIN_WIDTH - 1 downto 0);
 
     -- ====================== Auxiliary signals ====================== --
 
     -- Real-converted depth input value
     signal depth_tmp : Real;
-    -- Real-converted attenuation input value
-    signal attenuation_tmp : Real;
+    -- Real-converted gain input value
+    signal delay_gain_tmp : Real;
 
 begin
 
@@ -156,7 +156,7 @@ begin
     delayEffectInstance : entity work.DelayEffect
     generic map (
         SAMPLE_WIDTH      => SAMPLE_WIDTH,
-        ATTENUATION_WIDTH => ATTENUATION_WIDTH,
+        DELAY_GAIN_WIDTH  => DELAY_GAIN_WIDTH,
         DEPTH_WIDTH       => DEPTH_WIDTH,
         BRAM_SAMPLES_NUM  => BRAM_SAMPLES_NUM,
         BRAM_ADDR_WIDTH   => BRAM_ADDR_WIDTH,
@@ -171,7 +171,7 @@ begin
         sample_in      => sample_in,
         sample_out     => sample_out,
         depth_in       => depth_in,
-        attenuation_in => attenuation_in
+        delay_gain_in  => delay_gain_in
     );
 
     -- =================================================================================
@@ -192,16 +192,16 @@ begin
     );
 
     -- Transform signal into the signed value using saturation
-    attenuation_in <= real_to_unsigned_sat(attenuation_tmp, ATTENUATION_WIDTH);
-    -- Generate `attenuation_in` signal    
+    delay_gain_in <= real_to_unsigned_sat(delay_gain_tmp, DELAY_GAIN_WIDTH);
+    -- Generate `delay_gain_in` signal    
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => ATTENUATION_TOGGLE_FREQ_HZ,
+        FREQUENCY_HZ => DELAY_GAIN_TOGGLE_FREQ_HZ,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(ATTENUATION_AMPLITUDE * (2**ATTENUATION_WIDTH - 1))),
+        MAX_VAL      => Real(Integer(DELAY_GAIN_AMPLITUDE * (2**DELAY_GAIN_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => attenuation_tmp
+        wave         => delay_gain_tmp
     );    
 
 

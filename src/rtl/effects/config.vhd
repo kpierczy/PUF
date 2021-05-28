@@ -70,17 +70,31 @@ package pipe_config is
     -- Width of the `ticks_per_sample` input
     constant CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH : Positive := 17;
 
+    -- -------------------------------------------------------------------------
+    -- Tremolo effect's BRAM is used only with when the type of the LFO gene-
+    -- rator is 'QUADRUPLET'. At the moment underlaying params are set so that
+    -- it is possible to switch to the other generator can be done without 
+    -- confi's changes.
+    -- -------------------------------------------------------------------------
+
+    -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
+    constant CONFIG_TREMOLO_BRAM_SAMPLES_NUM : Positive := 257;
+    -- Width of the address port
+    constant CONFIG_TREMOLO_BRAM_ADDR_WIDTH : Positive := 9;
+    -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
+    constant CONFIG_TREMOLO_BRAM_LATENCY : Positive := 2;
+
     -- ================================ Delay effect's Configuration ============================== --
 
     -- -------------------------------------------------------------------------
-    -- Attenuation level of the delayed summand is treated as value in range
-    -- <0, 5), so width of his input impacts only granularity of the setup.
-    -- 12-bit (1/4096 precision) should be enough to provide smooth control
-    -- over the delayed samples' level.
+    -- Gain level of the delayed summand is treated as value in range <0, 5), 
+    -- so width of his input impacts only granularity of the setup. 12-bit
+    -- (1/4096 precision) should be enough to provide smooth control over the
+    -- delayed samples' level.
     -- -------------------------------------------------------------------------
 
-    -- Width of the @in attenuation_in port
-    constant CONFIG_DELAY_ATTENUATION_WIDTH : Positive := 12;
+    -- Width of the @in delay_gain_in port
+    constant CONFIG_DELAY_GAIN_WIDTH : Positive := 12;
 
     -- -------------------------------------------------------------------------
     -- Delay line's BRAM was configured to use 20 blocks of 36Kb BRAM. It can
@@ -93,15 +107,16 @@ package pipe_config is
     constant CONFIG_DELAY_DEPTH_WIDTH : Positive := 16;
 
     -- -------------------------------------------------------------------------
-    -- Delay's block ram was composed of 20 blocks containing 36Kb each (not 
+    -- Delay's block ram was composed of 21 blocks containing 36Kb each (not 
     -- 36KB). It can hold samples from withing about 1 second of recording 
-    -- (assuming 16-bit samples). In the BRAM core the output register was used
-    -- to isolate latencies of the blocks-choosing multiplexers what extended
+    -- (assuming 16-bit samples, strictly speaking 2^15 + 2^13 + 2^12 bytes). 
+    -- In the BRAM core the output register was used to isolate latencies of the
+    -- blocks-choosing multiplexers what extended
     -- latency to 2 cycles.
     -- -------------------------------------------------------------------------
 
     -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-    constant CONFIG_DELAY_BRAM_SAMPLES_NUM : Positive := 45_000;
+    constant CONFIG_DELAY_BRAM_SAMPLES_NUM : Positive := 45_056;
     -- Width of the address port
     constant CONFIG_DELAY_BRAM_ADDR_WIDTH : Positive := 16;
     -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
@@ -116,7 +131,7 @@ package pipe_config is
     -- over the delayed samples' level.
     -- -------------------------------------------------------------------------
 
-    -- Width of the @in attenuation_in port
+    -- Width of the @in strength_in port
     constant CONFIG_FLANGER_STRENGTH_WIDTH : Positive := 12;
 
     -- -------------------------------------------------------------------------
@@ -164,18 +179,15 @@ package pipe_config is
     -- effectively utilize a block, the full sapce is used. Should delay's 
     -- amplitude turn out too high, it can  always be limited by constraints 
     -- put on the `depth_in` input's values.
+    --
+    -- To isolate latencies of the BRAM Core's internal multiplexers a single
+    -- output register stage was used. It extends BRAM latency to 2 cycles.
     -- ---------------------------------------------------------------------- --
 
     -- Number of usable cells in delay line's BRAM
     constant CONFIG_FLANGER_DELAY_BRAM_SAMPLES_NUM : Positive := 1024;
     -- Width of the delay line's address port
     constant CONFIG_FLANGER_DELAY_BRAM_ADDR_WIDTH : Positive := 10;
-
-    -- ---------------------------------------------------------------------- --
-    -- To isolate latencies of the BRAM Core's internal multiplexers a single
-    -- output register stage was used. It extends BRAM latency to 2 cycles.
-    -- ---------------------------------------------------------------------- --
-
     -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
     constant CONFIG_FLANGER_DELAY_BRAM_LATENCY : Positive := 2;
 
@@ -189,6 +201,9 @@ package pipe_config is
     -- As quadruplet generator is used internally (@see QuadrupletGenerator)
     -- it is enough to hold first 257 samples of the sinusoid wave from range
     -- <0, 2pi>.
+    --
+    -- To isolate latencies of the BRAM Core's internal multiplexers a single
+    -- output register stage was used. It extends BRAM latency to 2 cycles.
     -- ---------------------------------------------------------------------- --
 
     -- Number of usable cells in delay line's BRAM
@@ -197,12 +212,6 @@ package pipe_config is
     constant CONFIG_FLANGER_LFO_BRAM_ADDR_WIDTH : Positive := 9;
     -- Width of the data hold in the generator's BRAM
     constant CONFIG_FLANGER_LFO_BRAM_DATA_WIDTH : Positive := 10;
-
-    -- ---------------------------------------------------------------------- --
-    -- To isolate latencies of the BRAM Core's internal multiplexers a single
-    -- output register stage was used. It extends BRAM latency to 2 cycles.
-    -- ---------------------------------------------------------------------- --
-
     -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
     constant CONFIG_FLANGER_LFO_BRAM_LATENCY : Positive := 2;
 

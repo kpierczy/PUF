@@ -11,6 +11,7 @@
 import os
 from pathlib import Path
 from shutil import copyfile
+import fileinput
 
 # Path to the root folder of the project
 PROJECT_HOME = '/home/cris/Desktop/PUF'
@@ -40,5 +41,17 @@ for path in ip_sources:
     # Create folder for the IP
     Path(ipOutDirPath).mkdir(exist_ok=True)
 
+    ipOutFilePathStr = os.path.join(str(ipOutDirPath), path.name)
+
     # Copy file to the outpt directory
-    copyfile(str(path), os.path.join(str(ipOutDirPath), path.name))
+    copyfile(str(path), ipOutFilePathStr)
+
+    # Open copied file
+    with fileinput.FileInput(ipOutFilePathStr, inplace=True) as file:
+        # Iterate over file's lines
+        for line in file:
+            # Replace path to the directory for outputs of IP's generation 
+            print(line.replace(
+                '"RUNTIME_PARAM.OUTPUTDIR">../../../../',
+                '"RUNTIME_PARAM.OUTPUTDIR">../../../workdir/'                       
+            ), end='')

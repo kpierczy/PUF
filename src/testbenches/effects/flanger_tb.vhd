@@ -29,7 +29,7 @@ entity FlangerEffectTb is
         -- Width of the input sample
         SAMPLE_WIDTH : Positive := 16;
 
-        -- Width of the @in attenuation_in port
+        -- Width of the @in strength_in port
         STRENGTH_WIDTH : Positive := 12;
         -- Width of the @in depth port
         DEPTH_WIDTH : Positive := 8;
@@ -229,7 +229,7 @@ begin
 
     -- Transform signal into the signed value using saturation
     strength_in <= real_to_unsigned_sat(strength_tmp, STRENGTH_WIDTH);
-    -- Generate `attenuation_in` signal    
+    -- Generate `strength_in` signal    
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
         FREQUENCY_HZ => STRENGTH_TOGGLE_FREQ_HZ,

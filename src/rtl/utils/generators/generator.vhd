@@ -26,11 +26,11 @@ entity Generator is
         -- ==================== QuadrupletGenerator-specific ==================== --
 
         -- Number of samples in a quarter (Valid only when GENERATOR_TYPE is QUADRUPLET)
-        BRAM_SAMPLES_NUM : Positive := 1024;
+        BRAM_SAMPLES_NUM : Positive;
         -- Width of the address port
-        BRAM_ADDR_WIDTH : Positive := 10;
+        BRAM_ADDR_WIDTH : Positive;
         -- Latency of the BRAM read operation (1 for lack of output registers in the BRAM block)
-        BRAM_LATENCY : Positive := 0
+        BRAM_LATENCY : Positive
     );
     port(
         -- Reset signal (asynchronous)

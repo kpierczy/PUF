@@ -64,9 +64,9 @@
       <obj_property name="label">Parameters</obj_property>
       <obj_property name="DisplayName">label</obj_property>
    </wvobject>
-   <wvobject type="array" fp_name="/DelayEffectTb/attenuation_in">
-      <obj_property name="ElementShortName">attenuation_in[7:0]</obj_property>
-      <obj_property name="ObjectShortName">attenuation_in[7:0]</obj_property>
+   <wvobject type="array" fp_name="/DelayEffectTb/delay_gain_in">
+      <obj_property name="ElementShortName">delay_gain_in[7:0]</obj_property>
+      <obj_property name="ObjectShortName">delay_gain_in[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/DelayEffectTb/depth_in">

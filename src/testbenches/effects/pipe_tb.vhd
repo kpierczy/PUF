@@ -43,7 +43,7 @@ entity EffectsPipeTb is
         -- Frequency of the input signal 
         INPUT_FREQ_HZ : Natural := 440;
         -- Amplitude of the input wave in normalized range <0; 1>
-        INPUT_AMPLITUDE : Real := 0.4;
+        INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
         INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
 
@@ -63,21 +63,21 @@ entity EffectsPipeTb is
         -- ---------- Clipping effect's parameters' stimulus signals ------------ --
 
         -- Clippign effect's state
-        CLIPPING_ENABLE : Std_logic := '1';
+        CLIPPING_ENABLE : Std_logic := '0';
 
         -- Amplitudes of gain values in normalized range <0; 1>
-        CLIPPING_GAIN_AMPLITUDE : Real := 0.8;
+        CLIPPING_GAIN_AMPLITUDE : Real := 0.5;
         -- Frequency of the changes of `gain_in` input
         CLIPPING_GAIN_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range
         CLIPPING_GAIN_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of clips in normalized range <0; 1>
-        CLIPPING_SATURATION_AMPLITUDE : Real := 0.8;
+        CLIPPING_OVERDRIVE_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `saturation_in` input
-        CLIPPING_SATURATION_TOGGLE_FREQ_HZ : Natural := 0;
+        CLIPPING_OVERDRIVE_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range
-        CLIPPING_SATURATION_PHASE_SHIFT : Real := 0.0;
+        CLIPPING_OVERDRIVE_PHASE_SHIFT : Real := 0.0;
 
         -- ----------- Tremolo effect's parameters' stimulus signals ------------ --
 
@@ -92,7 +92,7 @@ entity EffectsPipeTb is
         TREMOLO_DEPTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of the frequency-like parameter of the tremolo's LFO
-        TREMOLO_FREQUENCY_AMPLITUDE : Real := 0.8;
+        TREMOLO_FREQUENCY_AMPLITUDE : Real := 1.0;
         -- Toggle frequency of the frequency-like parameter of the tremolo's LFO
         TREMOLO_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range
@@ -110,12 +110,12 @@ entity EffectsPipeTb is
         -- Phase shift of the parameter in normalized <0,1> range
         DELAY_DEPTH_PHASE_SHIFT : Real := 0.0;
 
-        -- Amplitudes of `attenuation_in` input's values in normalized range <0; 1>
-        DELAY_ATTENUATION_AMPLITUDE : Real := 1.0;
-        -- Frequency of the changes of `attenuation_in` input
-        DELAY_ATTENUATION_TOGGLE_FREQ_HZ : Natural := 0;
+        -- Amplitudes of `delay_gain_in` input's values in normalized range <0; 1>
+        DELAY_DELAY_GAIN_AMPLITUDE : Real := 1.0;
+        -- Frequency of the changes of `delay_gain_in` input
+        DELAY_DELAY_GAIN_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range
-        DELAY_ATTENUATION_PHASE_SHIFT : Real := 0.0;
+        DELAY_DELAY_GAIN_PHASE_SHIFT : Real := 0.0;
 
         -- ----------- Flanger effect's parameters' stimulus signals ------------ --
 
@@ -137,7 +137,7 @@ entity EffectsPipeTb is
         FLANGER_STRENGTH_PHASE_SHIFT : Real := 0.0;
 
         -- Amplitudes of the frequency-like parameter of the flanger's LFO
-        FLANGER_FREQUENCY_AMPLITUDE : Real := 0.5;
+        FLANGER_FREQUENCY_AMPLITUDE : Real := 1.0;
         -- Toggle frequency of the frequency-like parameter of the flanger's LFO
         FLANGER_FREQUENCY_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range
@@ -173,7 +173,7 @@ architecture logic of EffectsPipeTb is
         -- Gain input
         signal clipping_gain_in : Unsigned(PARAM_WIDTH - 1 downto 0);
         -- Saturation level (for absolute value of the signal)
-        signal clipping_saturation_in : Unsigned(PARAM_WIDTH - 1 downto 0);
+        signal clipping_overdrive_in : Unsigned(PARAM_WIDTH - 1 downto 0);
 
 
         -- ====================== Tremolo effect's interface ==================== --
@@ -191,8 +191,8 @@ architecture logic of EffectsPipeTb is
         signal delay_enable_in : Std_logic := DELAY_ENABLE;
         -- Depth level (index of the delayed sample being summed with the input)
         signal delay_depth_in : Unsigned(PARAM_WIDTH - 1 downto 0);
-        -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-        signal delay_attenuation_in : Unsigned(PARAM_WIDTH - 1 downto 0);
+        -- Gain level pf the delayed summant (treated as value in <0,0.5) range)
+        signal delay_delay_gain_in : Unsigned(PARAM_WIDTH - 1 downto 0);
 
         -- ====================== Flanger effect's interface ==================== --
 
@@ -210,13 +210,13 @@ architecture logic of EffectsPipeTb is
         -- Real version of the effect's parameters used to generate signals with math_real library
         signal clipping_enable_tmp : Real;
         signal clipping_gain_tmp : Real;
-        signal clipping_saturation_tmp : Real;
+        signal clipping_overdrive_tmp : Real;
         signal tremolo_enable_tmp : Real;
         signal tremolo_depth_tmp : Real;
         signal tremolo_frequency_tmp : Real;
         signal delay_enable_tmp : Real;
         signal delay_depth_tmp : Real;
-        signal delay_attenuation_tmp : Real;
+        signal delay_delay_gain_tmp : Real;
         signal flanger_enable_tmp : Real;
         signal flanger_depth_tmp : Real;
         signal flanger_strength_tmp : Real;
@@ -267,13 +267,13 @@ begin
         sample_out             => sample_out,
         clipping_enable_in     => clipping_enable_in,
         clipping_gain_in       => clipping_gain_in,
-        clipping_saturation_in => clipping_saturation_in,
+        clipping_overdrive_in  => clipping_overdrive_in,
         tremolo_enable_in      => tremolo_enable_in,
         tremolo_depth_in       => tremolo_depth_in,
         tremolo_frequency_in   => tremolo_frequency_in,
         delay_enable_in        => delay_enable_in,
         delay_depth_in         => delay_depth_in,
-        delay_attenuation_in   => delay_attenuation_in,
+        delay_delay_gain_in    => delay_delay_gain_in,
         flanger_enable_in      => flanger_enable_in,
         flanger_depth_in       => flanger_depth_in,
         flanger_strength_in    => flanger_strength_in,
@@ -299,17 +299,17 @@ begin
     );
 
     -- Transform signal into the signed value using saturation
-    clipping_saturation_in <= real_to_unsigned_sat(clipping_saturation_tmp, PARAM_WIDTH);
+    clipping_overdrive_in <= real_to_unsigned_sat(clipping_overdrive_tmp, PARAM_WIDTH);
     -- Generate saturation signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => CLIPPING_SATURATION_TOGGLE_FREQ_HZ,
-        PHASE_SHIFT  => CLIPPING_SATURATION_PHASE_SHIFT,
+        FREQUENCY_HZ => CLIPPING_OVERDRIVE_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => CLIPPING_OVERDRIVE_PHASE_SHIFT,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(CLIPPING_SATURATION_AMPLITUDE * (2**PARAM_WIDTH - 1))),
+        MAX_VAL      => Real(Integer(CLIPPING_OVERDRIVE_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => clipping_saturation_tmp
+        wave         => clipping_overdrive_tmp
     );
 
     -- =================================================================================
@@ -349,17 +349,17 @@ begin
     -- =================================================================================
 
     -- Transform signal into the signed value using saturation
-    delay_attenuation_in <= real_to_unsigned_sat(delay_attenuation_tmp, PARAM_WIDTH);
+    delay_delay_gain_in <= real_to_unsigned_sat(delay_delay_gain_tmp, PARAM_WIDTH);
     -- Generate `modulation_ticks_per_sample_in` signal
     generate_random_stairs(
         SYS_CLK_HZ   => SYS_CLK_HZ,
-        FREQUENCY_HZ => DELAY_ATTENUATION_TOGGLE_FREQ_HZ,
-        PHASE_SHIFT  => DELAY_ATTENUATION_PHASE_SHIFT,
+        FREQUENCY_HZ => DELAY_DELAY_GAIN_TOGGLE_FREQ_HZ,
+        PHASE_SHIFT  => DELAY_DELAY_GAIN_PHASE_SHIFT,
         MIN_VAL      => 0.0,
-        MAX_VAL      => Real(Integer(DELAY_ATTENUATION_AMPLITUDE * (2**PARAM_WIDTH - 1))),
+        MAX_VAL      => Real(Integer(DELAY_DELAY_GAIN_AMPLITUDE * (2**PARAM_WIDTH - 1))),
         reset_n      => reset_n,
         clk          => clk,
-        wave         => delay_attenuation_tmp
+        wave         => delay_delay_gain_tmp
     );
 
     -- Transform signal into the signed value using saturation

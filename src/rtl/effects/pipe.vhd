@@ -54,8 +54,8 @@ entity EffectsPipe is
         clipping_enable_in : in Std_logic;
         -- Gain input
         clipping_gain_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
-        -- Saturation level (for absolute value of the signal)
-        clipping_saturation_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
+        -- Overdrive level (counter-proportional to the saturation level)
+        clipping_overdrive_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
 
 
         -- ====================== Tremolo effect's interface ==================== --
@@ -73,8 +73,8 @@ entity EffectsPipe is
         delay_enable_in : in Std_logic;
         -- Depth level (index of the delayed sample being summed with the input)
         delay_depth_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
-        -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-        delay_attenuation_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
+        -- Gain level pf the delayed summant (treated as value in <0,0.5) range)
+        delay_delay_gain_in : in Unsigned(PARAM_WIDTH - 1 downto 0);
 
         -- ====================== Flanger effect's interface ==================== --
 
@@ -129,8 +129,8 @@ architecture logic of EffectsPipe is
 
     -- Depth level (index of the delayed sample being summed with the input)
     signal delay_depth_internal_in : Unsigned(CONFIG_DELAY_DEPTH_WIDTH - 1 downto 0);
-    -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-    signal delay_attenuation_internal_in : Unsigned(CONFIG_DELAY_ATTENUATION_WIDTH - 1 downto 0);
+    -- Gain level of the delayed summant (treated as value in <0,0.5) range)
+    signal delay_delay_gain_internal_in : Unsigned(CONFIG_DELAY_GAIN_WIDTH - 1 downto 0);
     
     -- ====================== Flanger effect's interface ==================== --
 
@@ -216,7 +216,10 @@ begin
         GENERATOR_TYPE         => CONFIG_TREMOLO_GENERATOR_TYPE,
         DEPTH_WIDTH            => CONFIG_TREMOLO_DEPTH_WIDTH,
         LFO_SAMPLE_WIDTH       => CONFIG_TREMOLO_LFO_SAMPLE_WIDTH,
-        TICKS_PER_SAMPLE_WIDTH => CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH
+        TICKS_PER_SAMPLE_WIDTH => CONFIG_TREMOLO_TICKS_PER_SAMPLE_WIDTH,
+        BRAM_SAMPLES_NUM       => CONFIG_TREMOLO_BRAM_SAMPLES_NUM,
+        BRAM_ADDR_WIDTH        => CONFIG_TREMOLO_BRAM_ADDR_WIDTH,
+        BRAM_LATENCY           => CONFIG_TREMOLO_BRAM_LATENCY
     )
     port map (
         reset_n                        => reset_n,
@@ -234,7 +237,7 @@ begin
     delayEffectInstance : entity work.DelayEffect
     generic map (
         SAMPLE_WIDTH      => SAMPLE_WIDTH,
-        ATTENUATION_WIDTH => CONFIG_DELAY_ATTENUATION_WIDTH,
+        DELAY_GAIN_WIDTH  => CONFIG_DELAY_GAIN_WIDTH,
         DEPTH_WIDTH       => CONFIG_DELAY_DEPTH_WIDTH,
         BRAM_SAMPLES_NUM  => CONFIG_DELAY_BRAM_SAMPLES_NUM,
         BRAM_ADDR_WIDTH   => CONFIG_DELAY_BRAM_ADDR_WIDTH,
@@ -249,7 +252,7 @@ begin
         sample_in      => delay_sample_in,
         sample_out     => delay_sample_out,
         depth_in       => delay_depth_internal_in,
-        attenuation_in => delay_attenuation_internal_in
+        delay_gain_in  => delay_delay_gain_internal_in
     );
 
     -- Flanger effect module
@@ -341,7 +344,7 @@ begin
     -- ---------------------------------------------------------------------------------------   
 
     clipping_saturation_internal_in <= complete(b"0" & resize_from_right(
-        CONFIG_SAMPLE_WIDTH - 2, clipping_saturation_in
+        CONFIG_SAMPLE_WIDTH - 2, clipping_overdrive_in
     ));
     
     -- ============================= Tremolo effect's interface =========================== --
@@ -394,13 +397,13 @@ begin
     -- ============================== Delay effect's interface ============================ --
 
     -- ---------------------------------------------------------------------------------------
-    -- Attenuation input can always be used in the full range. The only fact to bear in mind
+    -- Gain input can always be used in the full range. The only fact to bear in mind
     -- is that MSBs of the external input should always correspond to MSBs of the module's
     -- input to cover full range (even if with not full granularity)
     -- ---------------------------------------------------------------------------------------
 
-    delay_attenuation_internal_in <= resize_from_right(
-        CONFIG_DELAY_ATTENUATION_WIDTH, delay_attenuation_in
+    delay_delay_gain_internal_in <= resize_from_right(
+        CONFIG_DELAY_GAIN_WIDTH, delay_delay_gain_in
     );
 
     -- ---------------------------------------------------------------------------------------

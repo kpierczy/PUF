@@ -4,7 +4,7 @@
 -- @ Modified time: 2021-05-25 14:42:59
 -- @ Description: 
 --    
---    Module of the IIR-filter-based delay guitar effect with adjustable depth and attenuation.
+--    Module of the IIR-filter-based delay guitar effect with adjustable depth and delay'ed channel's gain.
 --    
 -- @ Note: This module uses preconfigured BRAM block that has to be named `DelayEffectBram` and so it can be spwawned only once
 --     in the project.
@@ -25,8 +25,8 @@ entity DelayEffect is
 
         -- ====================== Effect-specific parameters ==================== --
 
-        -- Width of the @in attenuation_in port
-        ATTENUATION_WIDTH : Positive;
+        -- Width of the @in delay_gain_in port
+        DELAY_GAIN_WIDTH : Positive;
 
         -- Width of the @in depth port
         DEPTH_WIDTH : Positive;
@@ -64,8 +64,8 @@ entity DelayEffect is
 
         -- Depth level (index of the delayed sample being summed with the input)
         depth_in : in unsigned(DEPTH_WIDTH - 1 downto 0);
-        -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-        attenuation_in : in unsigned(ATTENUATION_WIDTH - 1 downto 0)
+        -- Gain level pf the delayed summant (treated as value in <0,0.5) range)
+        delay_gain_in : in unsigned(DELAY_GAIN_WIDTH - 1 downto 0)
 
     );
 end entity DelayEffect;
@@ -84,8 +84,8 @@ architecture logic of DelayEffect is
     -- Output sample buffer
     signal sample_out_buf : Signed(SAMPLE_WIDTH - 1 downto 0);
 
-    -- Buffer for attenuation level input
-    signal attenuation_buf : unsigned(ATTENUATION_WIDTH - 1 downto 0);
+    -- Buffer for gain level input
+    signal delay_gain_buf : unsigned(DELAY_GAIN_WIDTH - 1 downto 0);
     -- Depth level (index of the delayed sample being summed with the input)
     signal depth_buf : unsigned(DEPTH_WIDTH - 1 downto 0);
 
@@ -93,7 +93,7 @@ architecture logic of DelayEffect is
 
     -- Internal result of samples' summation
     signal result : Signed(SAMPLE_WIDTH - 1 downto 0);
-    -- Internal result of delayed sample's attenuation
+    -- Internal result of delayed sample's gain
     signal delayed_sample : Signed(SAMPLE_WIDTH - 1 downto 0);
 
     -- =============== Internal delay line's interface ================== --
@@ -214,11 +214,11 @@ begin
         bram_wen_out  => bram_wen_in
     );
 
-    -- ======================== Delayed sample's attenuation ======================== --
+    -- ============================ Delayed sample's gain =========================== --
 
-    -- Attenuated version of the delayed sample is computed asynchronously by the multiplying block
+    -- Gained version of the delayed sample is computed asynchronously by the multiplying block
     delayed_sample <= resize(
-        Signed(resize(attenuation_buf, ATTENUATION_WIDTH + 1)) * Signed(delay_data_out) / 2**(ATTENUATION_WIDTH + 1),
+        Signed(resize(delay_gain_buf, DELAY_GAIN_WIDTH + 1)) * Signed(delay_data_out) / 2**(DELAY_GAIN_WIDTH + 1),
     SAMPLE_WIDTH);
 
     -- ============================= Samples' summation ============================= --
@@ -260,7 +260,7 @@ begin
             -- Reset internal buffers
             sample_in_buf <= (others => '0');
             sample_out_buf <= (others => '0');
-            attenuation_buf <= (others => '0');
+            delay_gain_buf <= (others => '0');
             depth_buf <= (others => '0');
             delay_manual_reset_n <= '1';
             delay_busy_prev := '0';
@@ -293,7 +293,7 @@ begin
 
                             -- Push input data to internal buffers
                             sample_in_buf <= sample_in;
-                            attenuation_buf <= attenuation_in;
+                            delay_gain_buf <= delay_gain_in;
                             depth_buf <= depth_in;
                             -- Enable delay line to buffer previous output sample and get a new delayed sample
                             delay_enable_in <= '1';

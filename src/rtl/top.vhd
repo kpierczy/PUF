@@ -80,7 +80,7 @@ architecture logic of Top is
         -- Gain input
         signal clipping_gain_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
         -- Saturation level (for absolute value of the signal)
-        signal clipping_saturation_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
+        signal clipping_overdrive_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
 
         -- ====================== Tremolo effect's interface ==================== --
 
@@ -93,8 +93,8 @@ architecture logic of Top is
 
         -- Depth level (index of the delayed sample being summed with the input)
         signal delay_depth_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
-        -- Attenuation level pf the delayed summant (treated as value in <0,0.5) range)
-        signal delay_attenuation_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
+        -- Gain level pf the delayed summant (treated as value in <0,0.5) range)
+        signal delay_delay_gain_in : Unsigned(XADC_SAMPLE_WIDTH - 1 downto 0);
 
         -- ====================== Flanger effect's interface ==================== --
 
@@ -187,13 +187,13 @@ begin
         sample_out             => sample_out,
         clipping_enable_in     => clipping_enable_in,
         clipping_gain_in       => clipping_gain_in,
-        clipping_saturation_in => clipping_saturation_in,
+        clipping_overdrive_in  => clipping_overdrive_in,
         tremolo_enable_in      => tremolo_enable_in,
         tremolo_depth_in       => tremolo_depth_in,
         tremolo_frequency_in   => tremolo_frequency_in,
         delay_enable_in        => delay_enable_in,
         delay_depth_in         => delay_depth_in,
-        delay_attenuation_in   => delay_attenuation_in,
+        delay_delay_gain_in    => delay_delay_gain_in,
         flanger_enable_in      => flanger_enable_in,
         flanger_depth_in       => flanger_depth_in,
         flanger_strength_in    => flanger_strength_in,
@@ -259,15 +259,15 @@ begin
     -- Channel 0: `gain` of the clipping effect
     clipping_gain_in <= Unsigned(analog_channels_out(0));
     -- Channel 1: `saturation` of the clipping effect
-    clipping_saturation_in <= Unsigned(analog_channels_out(1));
+    clipping_overdrive_in <= Unsigned(analog_channels_out(1));
     -- Channel 2: `depth` of the tremolo effect
     tremolo_depth_in <= Unsigned(analog_channels_out(2));
     -- Channel 3: `frequency` of the tremolo effect's LFO
     tremolo_frequency_in <= Unsigned(analog_channels_out(3));
     -- Channel 4: `depth` of the delay effect
     delay_depth_in <= Unsigned(analog_channels_out(4));
-    -- Channel 5: `attenuation` of the delay effect
-    delay_attenuation_in <= Unsigned(analog_channels_out(5));
+    -- Channel 5: `delay_gain` of the delay effect
+    delay_delay_gain_in <= Unsigned(analog_channels_out(5));
     -- Channel 6: `depth` ofthe flanger effect
     flanger_depth_in <= Unsigned(analog_channels_out(6));
     -- Channel 7: `strength` of the flanger effect

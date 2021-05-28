@@ -26,7 +26,7 @@ entity FlangerEffect is
 
         -- ====================== Effect-specific parameters ==================== --
 
-        -- Width of the @in attenuation_in port
+        -- Width of the @in delay_gain_in port
         STRENGTH_WIDTH : Positive;
 
         -- Width of the @in depth port
