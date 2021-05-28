@@ -23,7 +23,6 @@ use work.xadc_config.all;
 -- ------------------------------------------------------------- Entity --------------------------------------------------------------
 
 entity Top is
-    
     port(
         -- Reset signal
         reset_n : in Std_logic;
@@ -58,7 +57,6 @@ entity Top is
         -- Serial output
         tx : out Std_logic 
     );
-
 end entity Top;
 
 -- ---------------------------------------------------------- Architecture -----------------------------------------------------------

@@ -4,7 +4,7 @@
 -- @ Modified time: 2021-05-19 18:40:34
 -- @ Description: 
 --    
---    Clipping effect's testbench 
+--    Effects pipe's testbench 
 --    
 -- ===================================================================================================================================
 
@@ -33,13 +33,6 @@ entity EffectsPipeTb is
         SAMPLE_WIDTH : Positive := 16;
         -- Width of the parameter inputs to the pipe
         PARAM_WIDTH : Positive := 12;
-
-        -- ------------------------- Gain's parameters ------------------------- --
-
-        -- Width of the gain input (gain's width must be smaller than sample's width)
-        GAIN_WIDTH : Positive := 12;
-        -- Index of the 2's power that the multiplication's result is divided by before saturation
-        TWO_POW_DIV : Natural := 11;
         
         -- --------------------- Input signal's parameters --------------------- --
 
@@ -236,7 +229,7 @@ begin
     -- =================================================================================
     
     -- Instance of the common features regarding guitar effects' testing
-    pipeTestbenchInstance: entity work.PipeTestbench(logic)
+    samplesGeneratorInstance: entity work.SamplesGenerator(logic)
     generic map (
         SYS_CLK_HZ             => SYS_CLK_HZ,
         SYS_RESET_TICKS        => SYS_RESET_TICKS,

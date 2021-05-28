@@ -142,6 +142,24 @@ package sim is
         signal wave : out std_logic
     );
 
+    -- PWM signal's generator
+    procedure generate_pwm(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift in normalized <0,1> range
+        constant PHASE_SHIFT : Real;
+        -- Pulse's width ('1' level) in normalized <0,1> range
+        constant PWM_WIDTH : Real;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal pwm : out std_logic
+    );    
+
     -- Generates random `stairs` with values in given range updating samples at rising edge of the clock
     procedure generate_random_stairs(
         -- System clock's frequency
@@ -479,6 +497,78 @@ package body sim is
 
     end procedure;
 
+    -- PWM signal's generator
+    procedure generate_pwm(
+        -- System clock's frequency
+        constant SYS_CLK_HZ : Positive;
+        -- Wave's frequency
+        constant FREQUENCY_HZ : Natural;
+        -- Wave's phase shift in normalized <0,1> range
+        constant PHASE_SHIFT : Real;
+        -- Pulse's width ('1' level) in normalized <0,1> range
+        constant PWM_WIDTH : Real;
+        -- System reset
+        signal reset_n : in std_logic;
+        -- System clock
+        signal clk : in std_logic;
+        -- Output wave
+        signal pwm : out std_logic
+    ) is
+        constant SYS_CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;
+    begin
+
+        -- Reset condition
+        pwm <= '0';
+
+        -- Wait for end of reset
+        wait until reset_n = '1';
+
+        -- If freequency is zero
+        if(FREQUENCY_HZ = 0) then
+
+            -- If pulse's width is positive, set signal to '1'
+            if(PWM_WIDTH > 0.0) then
+                pwm <= '1';
+            end if;
+
+            wait;
+
+        -- If non-zero frequency given
+        else
+
+            -- Wait for phase shift
+            wait for 1 sec / FREQUENCY_HZ * PHASE_SHIFT;
+
+            -- Update `wave` in predefined sequence
+            loop
+
+                -- Wait for rising edge
+                wait until rising_edge(clk);
+
+                -- Set signal high
+                pwm <= '1';
+
+                -- Wait for the high-time
+                if(1 sec / FREQUENCY_HZ * PWM_WIDTH > SYS_CLK_PERIOD) then
+                    wait for 1 sec / FREQUENCY_HZ * PWM_WIDTH - SYS_CLK_PERIOD;
+                end if;
+                -- Wait for next rising edge
+                wait until rising_edge(clk);
+
+                -- Set signal low
+                pwm <= '0';
+
+                -- Wait for the high-time
+                if(1 sec / FREQUENCY_HZ * (1.0 - PWM_WIDTH) > SYS_CLK_PERIOD) then
+                    wait for 1 sec / FREQUENCY_HZ * (1.0 - PWM_WIDTH) - SYS_CLK_PERIOD;
+                end if;
+
+            end loop;
+
+        end if;
+
+    end procedure;
+
     -- Generates random `stairs` with values in given range
     procedure generate_random_stairs(
         -- System clock's frequency
@@ -531,7 +621,7 @@ package body sim is
 end package body sim;
 
 -- ===================================================================================================================================
--- ------------------------------------------------------- Pipe's testbench --------------------------------------------------------
+-- ------------------------------------------------ Signal generator for testbenches -------------------------------------------------
 -- ===================================================================================================================================
 
 library ieee;
@@ -542,7 +632,7 @@ library work;
 use work.sim.all;
 
 -- General entity for effect's testing
-entity PipeTestbench is
+entity SignalGenerator is
     generic(
 
         -- ========================= General parameters ========================= --
@@ -563,8 +653,6 @@ entity PipeTestbench is
         INPUT_FREQ_HZ : Positive;
         -- Amplitude of the input wave in normalized range <0;1>
         INPUT_AMPLITUDE : Real;
-        -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive;
 
         -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
         INPUT_RAND_MEAN : Real;
@@ -584,13 +672,11 @@ entity PipeTestbench is
         -- ===================== Common effects' interface ====================== --
 
         -- Input sample
-        sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
-        -- Signal for new sample on input
-        valid_in : out Std_logic := '0'
+        sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0')
     );
-end entity PipeTestbench;
+end entity SignalGenerator;
 
-architecture logic of PipeTestbench is
+architecture logic of SignalGenerator is
 
     -- Peiord of the system clock
     constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;  
@@ -652,6 +738,102 @@ begin
             wave         => sample_tmp
         );
     end generate;
+
+end architecture logic;
+
+-- ===================================================================================================================================
+-- ------------------------------------------------------- Pipe's testbench --------------------------------------------------------
+-- ===================================================================================================================================
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
+library work;
+use work.sim.all;
+
+-- General entity for effect's testing
+entity SamplesGenerator is
+    generic(
+
+        -- ========================= General parameters ========================= --
+
+        -- Frequency of the system clock
+        SYS_CLK_HZ : Positive;
+        -- Count of system clock's ticks that the reset signal is active at the beggining
+        SYS_RESET_TICKS : Positive;
+        -- Width of the samples
+        SAMPLE_WIDTH : Positive := 16;
+
+        -- ===================== Input signal's parameters ====================== --
+
+        -- Type of the input wave (available: [sin/sin_rand])
+        INPUT_TYPE : String;
+
+        -- Frequency of the input signal 
+        INPUT_FREQ_HZ : Positive;
+        -- Amplitude of the input wave in normalized range <0;1>
+        INPUT_AMPLITUDE : Real;
+        -- Sampling frequency of the input signal
+        INPUT_SAMPLING_FREQ_HZ : Positive;
+
+        -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_MEAN : Real;
+        -- Standard deviation gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
+        INPUT_RAND_STD_DEV : Real
+
+    );
+    port(
+
+        -- ========================== System signals ============================ --
+
+        -- Reset signal
+        reset_n : out Std_logic := '0';
+        -- System clock
+        clk : out Std_logic := '0';
+
+        -- ===================== Common effects' interface ====================== --
+
+        -- Input sample
+        sample_in : out Signed(SAMPLE_WIDTH - 1 downto 0) := (others => '0');
+        -- Signal for new sample on input
+        valid_in : out Std_logic := '0'
+    );
+end entity SamplesGenerator;
+
+architecture logic of SamplesGenerator is
+
+    -- Peiord of the system clock
+    constant CLK_PERIOD : Time := 1 sec / SYS_CLK_HZ;  
+
+    -- Negation of module's enable signal
+    signal disable_in : Std_logic := '1';
+
+    -- Real-converted input signal
+    signal sample_tmp : Real;
+
+begin
+
+    -- =================================================================================
+    -- Internal components
+    -- =================================================================================
+
+    toptestbench_inst: entity work.SignalGenerator
+    generic map (
+        SYS_CLK_HZ         => SYS_CLK_HZ,
+        SYS_RESET_TICKS    => SYS_RESET_TICKS,
+        SAMPLE_WIDTH       => SAMPLE_WIDTH,
+        INPUT_TYPE         => INPUT_TYPE,
+        INPUT_FREQ_HZ      => INPUT_FREQ_HZ,
+        INPUT_AMPLITUDE    => INPUT_AMPLITUDE,
+        INPUT_RAND_MEAN    => INPUT_RAND_MEAN,
+        INPUT_RAND_STD_DEV => INPUT_RAND_STD_DEV
+    )
+    port map (
+        reset_n   => reset_n,
+        clk       => clk,
+        sample_in => sample_in
+    );
 
     -- =================================================================================
     -- Input periodic flags
@@ -755,7 +937,7 @@ begin
     -- =================================================================================
 
     -- Instance of the common features regarding guitar effects' testing
-    pipeTestbenchInstance: entity work.PipeTestbench(logic)
+    samplesGeneratorInstance: entity work.SamplesGenerator(logic)
     generic map (
         SYS_CLK_HZ             => SYS_CLK_HZ,
         SYS_RESET_TICKS        => SYS_RESET_TICKS,
