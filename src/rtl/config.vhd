@@ -11,7 +11,7 @@
 package config is
 
     -- Speed of the system clock
-    constant CONFIG_SYS_CLK_HZ : Positive := 100_000;
+    constant CONFIG_SYS_CLK_HZ : Positive := 100_000_000;
 
     -- Width of the input sample
     constant CONFIG_SAMPLE_WIDTH : Positive range 2 to Positive'high := 16;

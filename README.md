@@ -2,9 +2,9 @@
 
 The project aims to implement simple 5-module FPGA guitar multieffect based on the Digilent Cora Z10 board with Xilinx Zynq 7010 Core. It is going to contain contains:
 
-- saturation-based **distortion** module (implemented)
-- parametrizable-modulation-frequency **tremolo** module (implemented)
-- parametrizable-frequency of modulation-frequency **tremolo** module
+- saturation-based **distortion** module
+- parametrizable-modulation-frequency **tremolo** module
+- parametrizable-frequency of modulation-frequency **tremolo** module (non-implemented yet)
 - parametrizable-depth **delay** module
 - parametrizable-depth & parametrizable-frequency **chorus** module
 
@@ -13,8 +13,6 @@ At the moment the processing core is interfaced via UART port for simplicity dur
 # To do
 
 1. Implement **tremolo** module with sinusoidally changing modulation's frequency
-2. Implement **delay** module
-3. Implement **chorus** module
 
 # Version informations
 

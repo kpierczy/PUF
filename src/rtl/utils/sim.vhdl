@@ -374,7 +374,7 @@ package body sim is
         -- -- Update wave on rising edges
         loop
             ticks := ticks + 1;
-            wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
+            wave <= AMPLITUDE * sin(2.0 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) + OFFSET;
             wait for CLK_PERIOD;
         end loop;
 
@@ -417,7 +417,7 @@ package body sim is
         -- -- Update wave on rising edges
         loop
             ticks := ticks + 1;
-            wave <= AMPLITUDE * sin(2 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) +
+            wave <= AMPLITUDE * sin(2.0 * MATH_PI * Real(ticks) * Real(FREQUENCY_HZ) / Real(SYS_CLK_HZ) + PHASE_SHIFT) +
                     OFFSET + 
                     rand_real_gaussian(RNG_MEAN, RNG_STD_DEV);
             wait for CLK_PERIOD;
@@ -626,7 +626,7 @@ begin
             SYS_CLK_HZ   => SYS_CLK_HZ,
             FREQUENCY_HZ => INPUT_FREQ_HZ,
             PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * Real(2**(SAMPLE_WIDTH - 1) - 1)),
             OFFSET       => 0.0,
             reset_n      => reset_n,
             clk          => clk,
@@ -643,7 +643,7 @@ begin
             SYS_CLK_HZ   => SYS_CLK_HZ,
             FREQUENCY_HZ => INPUT_FREQ_HZ,
             PHASE_SHIFT  => 0.0,
-            AMPLITUDE    => Real(INPUT_AMPLITUDE * (2**(SAMPLE_WIDTH - 1) - 1)),
+            AMPLITUDE    => Real(INPUT_AMPLITUDE * Real(2**(SAMPLE_WIDTH - 1) - 1)),
             OFFSET       => 0.0,
             RNG_MEAN     => INPUT_RAND_MEAN * Real(2**(SAMPLE_WIDTH - 1) - 1),
             RNG_STD_DEV  => INPUT_RAND_STD_DEV * Real(2**(SAMPLE_WIDTH - 1) - 1),

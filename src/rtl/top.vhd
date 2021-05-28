@@ -65,11 +65,6 @@ end entity Top;
 
 architecture logic of Top is
 
-        -- Reset signal (asynchronous)
-        signal reset_n : Std_logic;
-        -- System clock
-        signal clk : Std_logic;
-
         -- ====================== Effects' common interface ===================== --
 
         -- `New input sample` signal (rising-edge-active)
@@ -251,35 +246,35 @@ begin
     -- Falling edge on the `busy` output of the samples' reciving module is detected
     edge_detector_in <= sampler_rx_busy;
     -- Output data from the receiver is connected to the input of the pipeline
-    sample_in <= sampler_rx_sample;
+    sample_in <= Signed(sampler_rx_sample);
 
     -- Line detecting falling edge on the `busy` output of the RX module is conected to the `valid_in` pipe's input
     valid_in <= edge_detector_out;
 
     -- Output data from the pipe is connected to the transmitter's input
-    sampler_tx_sample <= sample_out;
+    sampler_tx_sample <= Std_logic_vector(sample_out);
     -- `transfer` input of the TX module is connected to the `valid_out` output of the pip
     sampler_tx_transfer <= valid_out;
 
     -- --------------------- Mapping of the effect's parameters to the analog channels -------------------- --
 
     -- Channel 0: `gain` of the clipping effect
-    clipping_gain_in <= analog_channels_out(0);
+    clipping_gain_in <= Unsigned(analog_channels_out(0));
     -- Channel 1: `saturation` of the clipping effect
-    clipping_saturation_in <= analog_channels_out(1);
+    clipping_saturation_in <= Unsigned(analog_channels_out(1));
     -- Channel 2: `depth` of the tremolo effect
-    tremolo_depth_in <= analog_channels_out(2);
+    tremolo_depth_in <= Unsigned(analog_channels_out(2));
     -- Channel 3: `frequency` of the tremolo effect's LFO
-    tremolo_frequency_in <= analog_channels_out(3);
+    tremolo_frequency_in <= Unsigned(analog_channels_out(3));
     -- Channel 4: `depth` of the delay effect
-    delay_depth_in <= analog_channels_out(4);
+    delay_depth_in <= Unsigned(analog_channels_out(4));
     -- Channel 5: `attenuation` of the delay effect
-    delay_attenuation_in <= analog_channels_out(5);
+    delay_attenuation_in <= Unsigned(analog_channels_out(5));
     -- Channel 6: `depth` ofthe flanger effect
-    flanger_depth_in <= analog_channels_out(6);
+    flanger_depth_in <= Unsigned(analog_channels_out(6));
     -- Channel 7: `strength` of the flanger effect
-    flanger_strength_in <= analog_channels_out(7);
+    flanger_strength_in <= Unsigned(analog_channels_out(7));
     -- Channel 8: `frequency` of the flanger effect's LFO
-    flanger_frequency_in <= analog_channels_out(8);
+    flanger_frequency_in <= Unsigned(analog_channels_out(8));
 
 end architecture;
