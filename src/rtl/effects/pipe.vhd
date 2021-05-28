@@ -15,6 +15,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
+use work.config.all;
 use work.pipe_config.all;
 use work.generator_pkg.all;
 use work.xadc.all;
@@ -24,9 +25,9 @@ use work.xadc.all;
 entity EffectsPipe is
     generic(
         -- Width of samples
-        SAMPLE_WIDTH : Positive range 2 to Positive'High := CONFIG_SAMPLE_WIDTH;
+        SAMPLE_WIDTH : Positive range 2 to Positive'High;
         -- Width of the parameter inputs
-        PARAM_WIDTH : Positive := XADC_SAMPLE_WIDTH
+        PARAM_WIDTH : Positive
     );
     port(
 

@@ -18,9 +18,6 @@ use work.generator_pkg.all;
 
 package pipe_config is 
 
-    -- Width of the input sample
-    constant CONFIG_SAMPLE_WIDTH : Positive range 2 to Positive'high := 16;
-
     -- ============================== Clipping effect's Configuration ============================= --
 
     -- --------------------------------------------------------------------------
