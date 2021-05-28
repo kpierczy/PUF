@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="TopTb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="TopTb" />
+            <top_module name="config" />
+            <top_module name="edge" />
+            <top_module name="generator_pkg" />
+            <top_module name="glbl" />
+            <top_module name="pipe_config" />
+            <top_module name="sim" />
+            <top_module name="transreceiver_config" />
+            <top_module name="uart" />
+            <top_module name="xadc" />
+            <top_module name="xadc_config" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="11610000001fs"></ZoomEndTime>
+      <Cursor1Time time="19700010fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="270"></NameColumnWidth>
+      <ValueColumnWidth column_width="66"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="15" />
+   <wvobject type="logic" fp_name="/TopTb/reset_n">
+      <obj_property name="ElementShortName">reset_n</obj_property>
+      <obj_property name="ObjectShortName">reset_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/TopTb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider40" type="divider">
+      <obj_property name="label">Transmission</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group33">
+      <obj_property name="label">Transmission</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/TopTb/rx">
+         <obj_property name="ElementShortName">rx</obj_property>
+         <obj_property name="ObjectShortName">rx</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/TopTb/tx">
+         <obj_property name="ElementShortName">tx</obj_property>
+         <obj_property name="ObjectShortName">tx</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="divider41" type="divider">
+      <obj_property name="label">Samples</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#800000</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group35">
+      <obj_property name="label">Samples</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/TopTb/sample_in">
+         <obj_property name="ElementShortName">sample_in[15:0]</obj_property>
+         <obj_property name="ObjectShortName">sample_in[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+         <obj_property name="CellHeight">100</obj_property>
+         <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+         <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+         <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+         <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+         <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+         <obj_property name="AnalogHorizLine">0.000000</obj_property>
+         <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/sample_out">
+         <obj_property name="ElementShortName">sample_out[15:0]</obj_property>
+         <obj_property name="ObjectShortName">sample_out[15:0]</obj_property>
+         <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+         <obj_property name="CellHeight">100</obj_property>
+         <obj_property name="AnalogYRangeType">ANALOG_YRANGETYPE_AUTO</obj_property>
+         <obj_property name="AnalogYRangeMin">0.000000</obj_property>
+         <obj_property name="AnalogYRRangeMax">0.000000</obj_property>
+         <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
+         <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
+         <obj_property name="AnalogHorizLine">0.000000</obj_property>
+         <obj_property name="WaveformStyle">STYLE_ANALOG</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="divider42" type="divider">
+      <obj_property name="label">Enables</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#008000</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group34">
+      <obj_property name="label">Enables</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/TopTb/clipping_enable_in">
+         <obj_property name="ElementShortName">clipping_enable_in</obj_property>
+         <obj_property name="ObjectShortName">clipping_enable_in</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/TopTb/tremolo_enable_in">
+         <obj_property name="ElementShortName">tremolo_enable_in</obj_property>
+         <obj_property name="ObjectShortName">tremolo_enable_in</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/TopTb/delay_enable_in">
+         <obj_property name="ElementShortName">delay_enable_in</obj_property>
+         <obj_property name="ObjectShortName">delay_enable_in</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/TopTb/flanger_enable_in">
+         <obj_property name="ElementShortName">flanger_enable_in</obj_property>
+         <obj_property name="ObjectShortName">flanger_enable_in</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="divider43" type="divider">
+      <obj_property name="label">Mux</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#808000</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/TopTb/mux_sel_out">
+      <obj_property name="ElementShortName">mux_sel_out[3:0]</obj_property>
+      <obj_property name="ObjectShortName">mux_sel_out[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider102" type="divider">
+      <obj_property name="label">Parameters</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#D2691E</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group112">
+      <obj_property name="label">Clipping</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/TopTb/top_inst/clipping_overdrive_in">
+         <obj_property name="ElementShortName">clipping_overdrive_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">clipping_overdrive_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/top_inst/clipping_gain_in">
+         <obj_property name="ElementShortName">clipping_gain_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">clipping_gain_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group113">
+      <obj_property name="label">Tremolo</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/TopTb/top_inst/tremolo_depth_in">
+         <obj_property name="ElementShortName">tremolo_depth_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">tremolo_depth_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/top_inst/tremolo_frequency_in">
+         <obj_property name="ElementShortName">tremolo_frequency_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">tremolo_frequency_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group114">
+      <obj_property name="label">Delay</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/TopTb/top_inst/delay_depth_in">
+         <obj_property name="ElementShortName">delay_depth_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">delay_depth_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/top_inst/delay_delay_gain_in">
+         <obj_property name="ElementShortName">delay_delay_gain_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">delay_delay_gain_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group115">
+      <obj_property name="label">Flanger</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/TopTb/top_inst/flanger_depth_in">
+         <obj_property name="ElementShortName">flanger_depth_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">flanger_depth_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/top_inst/flanger_strength_in">
+         <obj_property name="ElementShortName">flanger_strength_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">flanger_strength_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/TopTb/top_inst/flanger_frequency_in">
+         <obj_property name="ElementShortName">flanger_frequency_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">flanger_frequency_in[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

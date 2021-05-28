@@ -26,15 +26,47 @@ SIGNAL_FREQUENCY_HZ = 100
 # Precision of the sample's value
 SAMPLE_PRECISION = 6
 
-# Function to be generated
-def fun(time):
-    return 0.5 + 0.5 * math.sin(2 * math.pi * SIGNAL_FREQUENCY_HZ * time)
+# PWM signal generator
+def pwm(time, freq, width, shift, amplitude):
+    """
+    Generator of the PWM signal
+
+    Arguments
+    ---------
+    freq : float
+        frequency of the pwm in [Hz]
+    width : float
+        width of the 'high' signal in normalized range <0,1>
+    shift : float
+        phase shift in normalized range <0,1>
+    amplitude : float
+        wave's amplitude
+    time : float
+        time of the requested wave's value in [s]
+    
+    Returns
+    -------
+    value of the pwm wave at given @in time
+    
+    """
+
+    # Calculate wave's period
+    period = 1 / freq
+
+    # Calculate offset of the @in time from start of PWM's period
+    time_offset = (time - shift * period) % period
+
+    # Return 1.0 or 0.0 depending on the phase
+    if(time_offset <= width * period):
+        return 1.0 * amplitude
+    else:
+        return 0.0
 
 # Simulation's length [ms]
-SIM_LENGTH = 50
+SIM_LENGTH = 60
 
 # Signal's sampling frequency
-SIM_FREQ = 1_000_000
+SIM_FREQ = 200_000
 
 # List of functions associated with subsequent signals
 signals = {
@@ -47,7 +79,7 @@ signals = {
     "VCCAUX"   : None,
     "VP"       : None,
     "VN"       : None,
-    "VAUXP[0]" : fun,
+    "VAUXP[0]" : lambda time: pwm(time, freq = 50, width = 1.0, shift = 0.0, amplitude = 1.0),
     "VAUXN[0]" : None,
     "VAUXP[1]" : None,
     "VAUXN[1]" : None,

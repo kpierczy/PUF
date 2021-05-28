@@ -8,6 +8,9 @@
 -- 
 -- @ Note: Configuration of project's modules should be set in dedicated `*config.vhd` files.
 -- @ Note: Analog stimulus signals for XADC should be defined in the `data/xadc-analog-input.txt` file
+-- @ Note: Intergation simulation of the whole project is not convinient, as XADC is configured in the `external mux` mode. It 
+--     results in need of generation of a strange analog-stimulus file where a single channel is used to set value of all 9 parameters
+--     of the effect's chain.
 -- ===================================================================================================================================
 
 library ieee;
@@ -39,7 +42,7 @@ entity TopTb is
         -- Frequency of the input signal 
         INPUT_FREQ_HZ : Natural := 440;
         -- Amplitude of the input wave in normalized range <0; 1>
-        INPUT_AMPLITUDE : Real := 0.4;
+        INPUT_AMPLITUDE : Real := 0.6;
         -- Sampling frequency of the input signal
         INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
 
@@ -72,7 +75,7 @@ entity TopTb is
         -- Frequency of the PWM wave controlling `enable` pin of the tremolo effect
         TREMOLO_ENABLE_PWM_FREQ_HZ : Natural := 0;
         -- Width of the PWM pulse (in <0,1> range)
-        TREMOLO_ENABLE_PWM_WIDTH : Real := 0.0;
+        TREMOLO_ENABLE_PWM_WIDTH : Real := 1.0;
         -- Phase shift of the PWM pulse (in <0,1> range)
         TREMOLO_ENABLE_PWM_PHASE_SHIFT : Real := 0.0;
 
@@ -106,9 +109,9 @@ architecture logic of TopTb is
         signal clk : Std_logic;
 
         -- Input signal being transmitter withi serial interface
-        signal sample_in : Signed(CONFIG_SAMPLE_WIDTH - 1 downto 0);
+        signal sample_in : Signed(CONFIG_SAMPLE_WIDTH - 1 downto 0) := (others => '0');
         -- Output signal being received within serial interface
-        signal sample_out : Signed(CONFIG_SAMPLE_WIDTH - 1 downto 0);
+        signal sample_out : Signed(CONFIG_SAMPLE_WIDTH - 1 downto 0) := (others => '0');
 
         -- Select signal for external MUX
         signal mux_sel_out : Std_logic_vector(3 downto 0);
@@ -128,9 +131,9 @@ architecture logic of TopTb is
         -- ============================= Serial lines =========================== --
 
         -- Serial input line
-        signal rx : Std_logic;
+        signal rx : Std_logic := '0';
         -- Serial output line
-        signal tx : Std_logic ;
+        signal tx : Std_logic  := '0';
         -- Error output from the samples' receiver
         signal err : UartErrors;
 
