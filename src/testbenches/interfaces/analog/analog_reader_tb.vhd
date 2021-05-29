@@ -25,12 +25,12 @@ use work.sim.all;
 entity AnalogSequenceReaderTb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
         -- Frequency of conversions
-        SAMPLING_FREQ_HZ : Positive := 100_000;
+        SAMPLING_FREQ_HZ : Positive := 50_000;
         -- Number of channels sampled in sequence by the ADC
         CHANNELS_NUM : Positive range 1 to 16 := 9
     );

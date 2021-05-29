@@ -21,7 +21,7 @@ entity DspTb is
         -- Data width
         DATA_WIDTH : Positive := 8;
         -- Number of bits to be shifted right after multiplication
-        constant TWO_POW_DIV : in Natural := 3;
+        constant TWO_POW_DIV : in Natural := 0;
         -- Min time between random toggles of the input data
         MIN_DATA_TOGGLE_TIME : Time := 10 ns;
         -- Max time between random toggles of the input data
@@ -53,14 +53,14 @@ architecture logic of DspTb is
     signal sum_signed_err : std_logic;
 
     -- Result of unsigned multiplication
-    signal mul_unsigned : Unsigned(DATA_WIDTH * 2 - TWO_POW_DIV - 2 downto 0);
+    signal mul_unsigned : Unsigned(2 * DATA_WIDTH - 3 downto 0);
     -- Expected result of unsigned multiplication
     signal mul_unsigned_expected : Unsigned(mul_unsigned'length - 1 downto 0);
     -- Error flag of unsigned multiplication
     signal mul_unsigned_err : std_logic;
 
     -- Result of signed multiplication
-    signal mul_signed : Signed(DATA_WIDTH - 1 downto 0);
+    signal mul_signed : Signed(2 * DATA_WIDTH - 3 downto 0);
     -- Expected result of signed multiplication
     signal mul_signed_expected : Signed(mul_signed'length - 1 downto 0);
     -- Error flag of signed multiplication

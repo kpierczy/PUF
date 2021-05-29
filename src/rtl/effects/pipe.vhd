@@ -287,25 +287,25 @@ begin
     -- ------------------------------------ Modules' chaining components -------------------------------------
     -- =======================================================================================================
 
-    -- 1. Clipping
-    clipping_sample_in <= sample_in;
-    clipping_valid_in <= valid_in;
+    -- 1. Tremolo
+    tremolo_sample_in <= sample_in;
+    tremolo_valid_in <= valid_in;
 
-    -- 2. Tremolo
-    tremolo_sample_in <= clipping_sample_out;
-    tremolo_valid_in <= clipping_valid_out;
-
-    -- 3. Delay
+    -- 2. Delay
     delay_sample_in <= tremolo_sample_out;
     delay_valid_in <= tremolo_valid_out;
 
-    -- 4. Delay
+    -- 3. Delay
     flanger_sample_in <= delay_sample_out;
     flanger_valid_in <= delay_valid_out;
 
-    -- 5 Output
-    sample_out <= flanger_sample_out;
-    valid_out <= flanger_valid_out;
+    -- 4. Clipping
+    clipping_sample_in <= flanger_sample_out;
+    clipping_valid_in <= flanger_valid_out;
+
+    -- 4 Output
+    sample_out <= clipping_sample_out;
+    valid_out <= clipping_valid_out;
 
     -- =======================================================================================================
     -- ----------------------------------------- Parameters' scaling -----------------------------------------

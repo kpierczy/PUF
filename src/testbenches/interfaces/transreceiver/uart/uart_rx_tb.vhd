@@ -25,7 +25,7 @@ entity UartRxTb is
         -- Minimal baud rate possible to be grenerated by the entity (used to compute width of the @in baud_period input)
         BAUD_RATE_MIN : Positive := 9600;
         -- Baud rate
-        BAUD_RATE : Positive := 2_000_000;
+        BAUD_RATE : Positive := 25_000_000;
         -- Data width
         DATA_WIDTH : Positive range 5 to 8 := 8;
         -- Parity usage
@@ -33,11 +33,11 @@ entity UartRxTb is
         -- Parity type
         PARITY_TYPE : ParityType := EVEN;
         -- Number of stopbits
-        STOP_BITS : Positive range 1 to 2 := 2;
+        STOP_BITS : Positive range 1 to 2 := 1;
         -- Signal negation (Defaults to standard RS-232, i.e. negated signal and data)
-        SIGNAL_NEGATION : Std_logic := '0';
+        SIGNAL_NEGATION : Std_logic := '1';
         -- Data negation (Defaults to standard RS-232, i.e. negated signal and data)
-        DATA_NEGATION : Std_logic := '0'
+        DATA_NEGATION : Std_logic := '1'
     );
 end entity UartRxTb;
 

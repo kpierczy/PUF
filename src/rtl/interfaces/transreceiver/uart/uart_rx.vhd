@@ -157,7 +157,7 @@ begin
                 when START_ST =>
 
                     -- If single baud's period didn't passed
-                    if(baudCounter /= baudPeriod / 2 ) then
+                    if(baudCounter /= (baudPeriod + 1) / 2 ) then
                         -- Increment baud counter
                         baudCounter := baudCounter + 1;
                     -- Otherwise
@@ -174,10 +174,10 @@ begin
                 when DATA_ST =>
 
                     -- If all bits wasn't received yet
-                    if(bitsCounter /= DATA_WIDTH) then
+                    if(bitsCounter /= DATA_WIDTH - 1) then
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod - 1) then
+                        if(baudCounter /= baudPeriod) then
                             -- Increment baud counter
                             baudCounter := baudCounter + 1;
                         -- Otherwise
@@ -195,17 +195,30 @@ begin
                     -- If all bits was received
                     else
 
-                        -- Reset bits counter
-                        bitsCounter := 0;
-
-                        -- If parity bit has to be sent
-                        if(PARITY_USED = '1') then
-                            -- Go to the 'parity reception' state
-                            state := PARITY_ST;
-                        -- Else, transmit stop bit
+                        -- If single baud's period didn't passed
+                        if(baudCounter /= baudPeriod) then
+                            -- Increment baud counter
+                            baudCounter := baudCounter + 1;
+                        -- Otherwise
                         else
-                            -- Go to the 'stop bit(s) reception' state
-                            state := STOP_ST;
+                            -- Shift buffer content
+                            dataBuf(dataBuf'left - 1 downto 0) := dataBuf(dataBuf'left downto 1);
+                            -- Sample next data bit from the serial input
+                            dataBuf(dataBuf'left) := rxNonInv(0);
+                            -- Reset bits counter
+                            bitsCounter := 0;
+                            -- Reset baud counter
+                            baudCounter := 0;
+
+                            -- If parity bit has to be sent
+                            if(PARITY_USED = '1') then
+                                -- Go to the 'parity reception' state
+                                state := PARITY_ST;
+                            -- Else, transmit stop bit
+                            else
+                                -- Go to the 'stop bit(s) reception' state
+                                state := STOP_ST;
+                            end if;
                         end if;
 
                     end if;
@@ -214,7 +227,7 @@ begin
                 when PARITY_ST =>
 
                     -- If single baud's period didn't passed
-                    if(baudCounter /= baudPeriod - 1) then
+                    if(baudCounter /= baudPeriod) then
                         -- Increment baud counter
                         baudCounter := baudCounter + 1; 
                     -- Otherwise
@@ -231,10 +244,10 @@ begin
                 when STOP_ST =>
 
                     -- If all stop bits wasn't sent yet
-                    if(bitsCounter /= STOP_BITS) then
+                    if(bitsCounter /= STOP_BITS - 1) then
 
                         -- If single baud's period didn't passed
-                        if(baudCounter /= baudPeriod - 1) then
+                        if(baudCounter /= baudPeriod) then
                             -- Increment baud counter
                             baudCounter := baudCounter + 1;
                         -- Otherwise
@@ -250,21 +263,33 @@ begin
                     -- Otherwise
                     else
 
-                        -- Signal end of reception
-                        busy <= '0';
-                        -- Output error flags
-                        err <= errBuf;
-                        -- Update received word
-                        if((errBuf.start_err or errBuf.stop_err or errBuf.parity_err) = '0') then
-                            data <= dataBuf when DATA_NEGATION = '0' else not(dataBuf);
+                        -- If single baud's period didn't passed
+                        if(baudCounter /= baudPeriod) then
+                            -- Increment baud counter
+                            baudCounter := baudCounter + 1;
+                        -- Otherwise
                         else
-                            data <= (others => '0');
-                        end if;
+                            -- Sample stop bit from the serial output     
+                            errBuf.stop_err := rxNonInv(0);
+                            -- Reset baud counter
+                            baudCounter := 0;
 
-                        -- Reset bits counter
-                        bitsCounter := 0;
-                        -- Go to the 'stop bit(s) transmission' state
-                        state := IDLE_ST;
+                            -- Signal end of reception
+                            busy <= '0';
+                            -- Output error flags
+                            err <= errBuf;
+                            -- Update received word
+                            if((errBuf.start_err or errBuf.stop_err or errBuf.parity_err) = '0') then
+                                data <= dataBuf when DATA_NEGATION = '0' else not(dataBuf);
+                            else
+                                data <= (others => '0');
+                            end if;
+
+                            -- Reset bits counter
+                            bitsCounter := 0;
+                            -- Go to the 'stop bit(s) transmission' state
+                            state := IDLE_ST;
+                        end if;
 
                     end if;
 

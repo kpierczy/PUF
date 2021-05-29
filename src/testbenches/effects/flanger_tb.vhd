@@ -20,7 +20,7 @@ use work.sim.all;
 entity FlangerEffectTb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
@@ -32,25 +32,25 @@ entity FlangerEffectTb is
         -- Width of the @in strength_in port
         STRENGTH_WIDTH : Positive := 12;
         -- Width of the @in depth port
-        DEPTH_WIDTH : Positive := 8;
+        DEPTH_WIDTH : Positive := 10;
         -- Width of the `ticks_per_delay_sample_in` input
-        TICKS_PER_DELAY_SAMPLE_WIDTH : Positive := 30;
+        TICKS_PER_DELAY_SAMPLE_WIDTH : Positive := 20;
 
         -- =========================== BRAM parameters ========================== --
 
         -- Number of usable cells in delay line's BRAM
-        DELAY_BRAM_SAMPLES_NUM : Positive := 2_560;
+        DELAY_BRAM_SAMPLES_NUM : Positive := 1024;
         -- Width of the delay line's address port
-        DELAY_BRAM_ADDR_WIDTH : Positive := 16;
+        DELAY_BRAM_ADDR_WIDTH : Positive := 10;
         -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
         DELAY_BRAM_LATENCY : Positive := 2;
 
         -- Number of usable cells in delay line's BRAM
-        GENERATOR_BRAM_SAMPLES_NUM : Positive := 5513;
+        GENERATOR_BRAM_SAMPLES_NUM : Positive := 257;
         -- Width of the delay line's address port
-        GENERATOR_BRAM_ADDR_WIDTH : Positive := 13;
+        GENERATOR_BRAM_ADDR_WIDTH : Positive := 9;
         -- Width of the data hold in the generator's BRAM
-        GENERATOR_BRAM_DATA_WIDTH : Positive := 16;
+        GENERATOR_BRAM_DATA_WIDTH : Positive := 10;
         -- Latency of the delay line's BRAM read operation (1 for lack of output registers in the BRAM block)
         GENERATOR_BRAM_LATENCY : Positive := 2; 
         
@@ -81,7 +81,7 @@ entity FlangerEffectTb is
         -- ================ Effect parameters' stimulus signals ================= --
 
         -- Amplitudes of `depth_in` input's values in normalized range <0; 1> ('1.0' is (BRAM_SAMPLES_NUM - 1))
-        DEPTH_AMPLITUDE : Real := 0.5;
+        DEPTH_AMPLITUDE : Real := 1.0;
         -- Frequency of the changes of `depth_in` input
         DEPTH_TOGGLE_FREQ_HZ : Natural := 0;
 
@@ -97,7 +97,7 @@ entity FlangerEffectTb is
 
         -- Additional argument used to automatically calculate TICKS_PER_DELAY_SAMPLE_AMPLITUDE
         -- for the given delay value's modulation frequency (TICKS_PER_DELAY_SAMPLE_AMPLITUDE used when < 0)
-        DELAY_MODULATION_FREQ_HZ_AMPLITUDE : Real := 0.5
+        DELAY_MODULATION_FREQ_HZ_AMPLITUDE : Real := 3.0
     );
 end entity FlangerEffectTb;
 

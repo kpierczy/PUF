@@ -22,7 +22,7 @@ use work.sim.all;
 entity TriangleGeneratorTb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 

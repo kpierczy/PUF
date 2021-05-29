@@ -7,21 +7,20 @@
          <top_modules>
             <top_module name="TremoloEffectTb" />
             <top_module name="edge" />
-            <top_module name="generator" />
+            <top_module name="generator_pkg" />
             <top_module name="glbl" />
             <top_module name="sim" />
-            <top_module name="tremolo" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="60050000001fs"></ZoomEndTime>
-      <Cursor1Time time="4550065000fs"></Cursor1Time>
+      <ZoomStartTime time="36125600000fs"></ZoomStartTime>
+      <ZoomEndTime time="109375600001fs"></ZoomEndTime>
+      <Cursor1Time time="71532850000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="285"></NameColumnWidth>
-      <ValueColumnWidth column_width="83"></ValueColumnWidth>
+      <ValueColumnWidth column_width="79"></ValueColumnWidth>
    </column_width_setting>
    <WVObjectSize size="12" />
    <wvobject type="logic" fp_name="/TremoloEffectTb/reset_n">
@@ -35,6 +34,7 @@
    <wvobject fp_name="divider550" type="divider">
       <obj_property name="label">Samples</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#800000</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/TremoloEffectTb/sample_in">
       <obj_property name="ElementShortName">sample_in[15:0]</obj_property>
@@ -53,6 +53,7 @@
    <wvobject fp_name="divider96" type="divider">
       <obj_property name="label">Parameters</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#808000</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/TremoloEffectTb/depth_in">
       <obj_property name="ElementShortName">depth_in[15:0]</obj_property>

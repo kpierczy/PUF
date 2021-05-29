@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="SampleRxTb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="SampleRxTb" />
+            <top_module name="sim" />
+            <top_module name="uart" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="8491551501fs"></ZoomStartTime>
+      <ZoomEndTime time="8493064502fs"></ZoomEndTime>
+      <Cursor1Time time="8491894501fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="250"></NameColumnWidth>
+      <ValueColumnWidth column_width="66"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="10" />
+   <wvobject type="logic" fp_name="/SampleRxTb/reset_n">
+      <obj_property name="ElementShortName">reset_n</obj_property>
+      <obj_property name="ObjectShortName">reset_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/SampleRxTb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider221" type="divider">
+      <obj_property name="label">Serial</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#800000</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/SampleRxTb/rx">
+      <obj_property name="ElementShortName">rx</obj_property>
+      <obj_property name="ObjectShortName">rx</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider223" type="divider">
+      <obj_property name="label">Data</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">#808000</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/SampleRxTb/sampleToTransmit">
+      <obj_property name="ElementShortName">sampleToTransmit[15:0]</obj_property>
+      <obj_property name="ObjectShortName">sampleToTransmit[15:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/SampleRxTb/sampleReceived">
+      <obj_property name="ElementShortName">sampleReceived[15:0]</obj_property>
+      <obj_property name="ObjectShortName">sampleReceived[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider224" type="divider">
+      <obj_property name="label">Flags</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/SampleRxTb/err">
+      <obj_property name="ElementShortName">err</obj_property>
+      <obj_property name="ObjectShortName">err</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/SampleRxTb/busy">
+      <obj_property name="ElementShortName">busy</obj_property>
+      <obj_property name="ObjectShortName">busy</obj_property>
+   </wvobject>
+</wave_config>

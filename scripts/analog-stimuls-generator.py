@@ -62,6 +62,10 @@ def pwm(time, freq, width, shift, amplitude):
     else:
         return 0.0
 
+# Sinusoidal wave generator
+def sin(time, freq, shift, amplitude, offset):
+    return math.sin(2* math.pi * freq * time + shift) * amplitude + offset
+
 # Simulation's length [ms]
 SIM_LENGTH = 60
 
@@ -79,7 +83,7 @@ signals = {
     "VCCAUX"   : None,
     "VP"       : None,
     "VN"       : None,
-    "VAUXP[0]" : lambda time: pwm(time, freq = 50, width = 1.0, shift = 0.0, amplitude = 1.0),
+    "VAUXP[0]" : lambda time: sin(time, freq = 1_000, shift = 0.0, amplitude = 0.25, offset = 0.25),
     "VAUXN[0]" : None,
     "VAUXP[1]" : None,
     "VAUXN[1]" : None,

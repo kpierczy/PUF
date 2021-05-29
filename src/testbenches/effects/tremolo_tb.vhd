@@ -21,7 +21,7 @@ use work.sim.all;
 entity TremoloEffectTb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
@@ -59,11 +59,11 @@ entity TremoloEffectTb is
         INPUT_TYPE : String := "sin";
 
         -- Frequency of the input signal 
-        INPUT_FREQ_HZ : Positive := 1000;
+        INPUT_FREQ_HZ : Positive := 440;
         -- Amplitude of the input wave in normalized range <0; 1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
 
         -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
         INPUT_RAND_MEAN : Real := 0.0;
@@ -73,9 +73,9 @@ entity TremoloEffectTb is
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 60;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 20;
         -- Number of system clock's cycles that the `enable_in` port is held low
-        CYCLIC_DISABLE_CLK : Positive := 200_000;
+        CYCLIC_DISABLE_CLK : Positive := 50_00_000;
 
         -- ================ Effect parameters' stimulus signals ================= --
 

@@ -21,7 +21,7 @@ entity ClippingEffectTb is
     generic(
 
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;        
+        SYS_CLK_HZ : Positive := 100_000_000;        
         -- Initial system reset time (in system clock's cycles)
         SYS_RESET_TICKS : Positive := 10;
 
@@ -45,14 +45,14 @@ entity ClippingEffectTb is
         -- -------------------------------------------------------------------------
 
         -- Type of the input wave (available: [sin/sin_rand])
-        INPUT_TYPE : String := "sin_rand";
+        INPUT_TYPE : String := "sin";
 
         -- Frequency of the input signal 
-        INPUT_FREQ_HZ : Natural := 1000;
+        INPUT_FREQ_HZ : Natural := 440;
         -- Amplitude of the input wave in normalized range <0; 1>
         INPUT_AMPLITUDE : Real := 0.5;
         -- Sampling frequency of the input signal
-        INPUT_SAMPLING_FREQ_HZ : Positive := 100_000;
+        INPUT_SAMPLING_FREQ_HZ : Positive := 44_100;
 
         -- Mean of the gaussian distribution summed with the sin wave in normalized range <0;1> (1 is max sample value)
         INPUT_RAND_MEAN : Real := 0.0;
@@ -62,9 +62,9 @@ entity ClippingEffectTb is
         -- ==================== Enable signal's parameters ====================== --
 
         -- Frequency of pulling down the `enable_in` input port (disabled when 0)
-        CYCLIC_DISABLE_FREQ_HZ : Natural := 70;
+        CYCLIC_DISABLE_FREQ_HZ : Natural := 50;
         -- Number of system clock's cycles that the `enable_in` port is held low
-        CYCLIC_DISABLE_CLK : Positive := 200_000;
+        CYCLIC_DISABLE_CLK : Positive := 2_000_000;
 
         -- ================ Effect parameters' stimulus signals ================= --
 
@@ -74,14 +74,14 @@ entity ClippingEffectTb is
         -- -------------------------------------------------------------------------
 
         -- Amplitudes of gain values in normalized range <0; 1>
-        GAIN_AMPLITUDE : Real := 0.75;
+        GAIN_AMPLITUDE : Real := 0.5;
         -- Frequency of the changes of `gain_in` input
-        GAIN_TOGGLE_FREQ_HZ : Natural := 120;
+        GAIN_TOGGLE_FREQ_HZ : Natural := 0;
 
         -- Amplitudes of clips in normalized range <0; 1>
-        SATURATION_AMPLITUDE : Real := 0.75;
+        SATURATION_AMPLITUDE : Real := 0.2;
         -- Frequency of the changes of `saturation_in` input
-        SATURATION_TOGGLE_FREQ_HZ : Natural := 100
+        SATURATION_TOGGLE_FREQ_HZ : Natural := 0
 
     );
 end entity ClippingEffectTb;

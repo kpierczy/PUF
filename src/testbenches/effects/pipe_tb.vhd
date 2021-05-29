@@ -63,10 +63,10 @@ entity EffectsPipeTb is
         -- ---------- Clipping effect's parameters' stimulus signals ------------ --
 
         -- Clippign effect's state
-        CLIPPING_ENABLE : Std_logic := '0';
+        CLIPPING_ENABLE : Std_logic := '1';
 
         -- Amplitudes of gain values in normalized range <0; 1>
-        CLIPPING_GAIN_AMPLITUDE : Real := 0.5;
+        CLIPPING_GAIN_AMPLITUDE : Real := 0.75;
         -- Frequency of the changes of `gain_in` input
         CLIPPING_GAIN_TOGGLE_FREQ_HZ : Natural := 0;
         -- Phase shift of the parameter in normalized <0,1> range

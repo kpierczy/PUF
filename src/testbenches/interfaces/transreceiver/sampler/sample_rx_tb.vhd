@@ -25,15 +25,15 @@ entity SampleRxTb is
         SYS_RESET_TICKS : Positive := 10;
 
         -- System clock frequency
-        SYS_CLK_HZ : Positive := 200_000_000;
+        SYS_CLK_HZ : Positive := 100_000_000;
 
         -- Bytes in the sample
-        SAMPLE_BYTES : Positive := 3;
+        SAMPLE_BYTES : Positive := 2;
         -- Gap cycles between subsequent samples transmitted 
-        SAMPLE_GAP : Natural := 1;
+        SAMPLE_GAP : Natural := 3;
 
         -- Baud rate of the transmitter's entity
-        BAUD_RATE : Positive := 2_000_000;
+        BAUD_RATE : Positive := 25_000_000;
         -- Parity bit usage
         PARITY_USED : Std_logic := '1';
         -- Type of parity
@@ -41,9 +41,9 @@ entity SampleRxTb is
         -- Number of stopbits
         STOP_BITS : Positive := 1;
         -- Signal negation
-        SIGNAL_NEGATION : Std_logic := '0';
+        SIGNAL_NEGATION : Std_logic := '1';
         -- Data negation
-        DATA_NEGATION : Std_logic := '0'
+        DATA_NEGATION : Std_logic := '1'
     );
 end entity SampleRxTb;
 
@@ -170,10 +170,11 @@ begin
 
                 -- Reset counter of received byte
                 bytesTransmitted := 0;
-                -- Change value of the next sample to be transmitted
-                sampleToTransmit <= Std_logic_vector(Unsigned(sampleToTransmit) + to_unsigned(7, SAMPLE_BYTES * BYTE_WIDTH));
                 -- Wait a few cycle before sending nex samples
                 wait for CLK_PERIOD * SAMPLE_GAP;
+                -- Change value of the next sample to be transmitted
+                sampleToTransmit <= Std_logic_vector(Unsigned(sampleToTransmit) + to_unsigned(7, SAMPLE_BYTES * BYTE_WIDTH));
+                wait for CLK_PERIOD;
 
             end if;
 

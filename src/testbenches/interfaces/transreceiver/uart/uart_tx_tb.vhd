@@ -22,11 +22,11 @@ use work.sim.all;
 entity UartTxTb is
     generic(
         -- System clock frequency
-        SYS_CLK_HZ : Natural := 200_000_000;
+        SYS_CLK_HZ : Natural := 100_000_000;
         -- Minimal baud rate of the transmitter's entity
         BAUD_RATE_MIN : Positive := 9600;
         -- Baud rate of the transmitter's entity
-        BAUD_RATE : Positive := 921_600;
+        BAUD_RATE : Positive := 25_000_000;
         -- Data width
         DATA_WIDTH : Positive := 8;
         -- Parity bit usage
@@ -36,7 +36,7 @@ entity UartTxTb is
         -- Number of stopbits
         STOP_BITS : Positive := 1;
         -- Signal negation
-        SIGNAL_NEGATION : Std_logic := '0';
+        SIGNAL_NEGATION : Std_logic := '1';
         -- Data negation
         DATA_NEGATION : Std_logic := '1'
     );
@@ -77,7 +77,7 @@ begin
     -- =================================================================================
 
     -- Clock signal
-    clk <= not clk after CLK_PERIOD / 2 when reset_n /= '0' else '0';
+    clock_tb(CLK_PERIOD, clk);
 
     -- =================================================================================
     -- Internal components
@@ -99,7 +99,7 @@ begin
         reset_n     => reset_n,
         clk         => clk,
         baud_period => baud_period,
-        transfer      => transfer,
+        transfer    => transfer,
         data        => dataToTransmit,
         busy        => busy,
         tx          => tx
@@ -120,7 +120,7 @@ begin
         dataToTransmit <= (others=>'0');
 
         -- Wait for system start
-        wait for 10 * CLK_PERIOD;
+        wait for 11 * CLK_PERIOD;
         -- Disable reset signal
         reset_n <= '1';
         -- Wait for transmission start
