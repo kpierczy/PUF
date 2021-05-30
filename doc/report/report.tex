@@ -78,7 +78,7 @@
 % Definition of `part` module
 \renewcommand\partheadstartvskip{\clearpage\null\vfil}
 \renewcommand\partheadmidvskip{\par\nobreak\vskip 20pt\thispagestyle{empty}}
-\renewcommand\partheadendvskip{\vfil\clearpage}
+\renewcommand\partheadendvskip{\vfil\clearpage\setcounter{section}{0}}
 \renewcommand\raggedpart{\centering}
 
 % ================================================================================================================================== %
@@ -105,27 +105,6 @@
 
 % Chapter II - Implementation
 \part{Implementacja}
-% Plan części implementacyjnej
-% 1. Struktura projektowa
-%     - struktura systemu
-%     - struktura urządzenia
-%     - struktura programowa
-% 2. Interfejs komunikacyjny
-%     - moduł UART
-%        - schemat blokowy z opisem parameterów
-%        - automat skończony
-%        - symulacje
-%     - bufory odbiorczy i~nadawczy
-%        - schemat blokowy z opisem parameterów
-%        - automat skończony
-%        - symulacje
-% 3. Interfejs analogowy
-%     - konfiguracja XADC
-%     - wrapper XADC IP Core
-%     - schemat blokowy skanera z opisem parameterów
-%     - automat skończony skanera
-%     - symulacje
-%        - skrypt generujący przebieg sygnałów analogowych
 % 4. Bloki DSP
 %     - symulacje
 % 5. Generatory
@@ -159,7 +138,9 @@
 % 11. Integracja
 %     - symulacje
 % 12. Podsumowanie
-\input{tex/implementation/uart.tex}
+\input{tex/implementation/structure.tex}
+\input{tex/implementation/communication.tex}
+\input{tex/implementation/analog.tex}
 
 % Bibliography
 \clearpage
