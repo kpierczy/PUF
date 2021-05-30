@@ -1,0 +1,39 @@
+\section{Efekt pogłosu}
+
+Doświadczenia w~wykorzystywaniu bloków BRAM nabyte w~czasie implementacji generatora funkcji sinus pozwoliły na sprawną realizację kolejnego z~zaplanowanych efektów - pogłosu. Prace nad nim rozpoczęto od zaimplementowania parametryzowalneog \textbf{modułu opóźnienia}, ktory miał zostać użyty również w~przypadku kolejnego efektu. Zasada jego działania jest stosunkowo prosta i~zasadza się na sekwencyjnym zapisie próbek wejściowych w~pamięci RAM - traktowanej jako bufor kołowy - oraz odczycie próbek spod adresu będącego wynikiem odejmowania adresu aktualnie zapisywanej próbki i~parametru zewnętrznego (stopnia opóźnienia). Blok ten implementuje wejście i~wyjście danych oraz długość opóźnienia, wyjście \verb|busy| informujące o~możliwości odebrania opóźnionej próbki z~wyjścia oraz wejście \verb |enable| umożlwiające rozpoczęcie przetwarzenia próbki wejściowej. Jego strukturę zewnętrzną przedstawiono na Rys. \ref{delay-line-structure}.
+
+\vspace{0.5cm}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.75]{img/diagrams/delay_line.pdf}
+    \captionsetup{format=plain,justification=centering}
+    \caption{Struktura wyprowadzeń modułu opóźniającego}
+    \label{delay-line-structure}
+\end{figure}
+\vspace{0.5cm}
+
+Porty bloku efektu zostały z~kolei ukazane na Rys. \ref{delay-structure}. Posiada dwa wejścia określające kolejno głębokość echa (\verb|depth|) oraz jego siłę (\verb|delay|). Pierwszy parametr interpretowany jest jako opóźnienie próbki odczytywanej z~bloku opóźniającego. Z~kolei drugi traktowany jest jako liczba z~zakresu $[0,5)$ przez którą mnożone jest wyjście bloku opóźniającego przed zsumowaniem go z~aktualną próbką wejściową.
+
+\vspace{0.5cm}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.75]{img/diagrams/delay.pdf}
+    \captionsetup{format=plain,justification=centering}
+    \caption{Struktura wyprowadzeń bloku \textit{delay}}
+    \label{delay-structure}
+\end{figure}
+\vspace{0.5cm}
+
+Dzięki wydzieleniu większego elementu efektu w~postaci odrębnego bloku funkcjonalnego, proces dalszej jego realizacji był znacznie ułatwiony. Logika moduły sprowadzona została do dwustanowego automat skońćzony. W~stanie \textit{idle} moduł oczekuje na pojawienie się jedynki logicznej na porcie \verb|enable|. Gdy zostanie ona wykryta, wartości na z~portów danych oraz parametrów są przepisywane do wewnętrznych buforów. Jednocześnie stan linii \verb|enable| modułu opóźniającego oraz wyjścia \verb|busy| efektu ustawiany jest na wysoki. Wejście danych podłączone jest na stałe do bufora \textbf{wyjściowego} efektu co oznacza, że w~pamięci BRAM zapisana zostanie próbka wynikowa \textbf{poprzedniego cyklu przetwarzania}. Po uruchomieniu bloku opóźnienia moduł przechodzi do stanu oczekiwania na wynik. Jego pojawienie się na wyjściu bloku sygnalizowane jest przez opadające zbocze portu \verb|busy|. W~momencie jego wykrycia aktualizowany jest stan bufora danych wyjściowych. W~zależności, czy zbuforowana wartość parametru \verb|depth| jest zerowa czy nie, na wyjście trafia nieprzetworzona wersja danych wyjściowych lub wynik (asynchronicznego) dodawania zawartości bufora wejściowego z~iloczynem wyjścia z~bloku opóźniającego z~wartością bufora \verb|delay|\footnote{Wynik iloczynu jest przesunięty w~prawo o~liczbę bitów o~jeden większą niż szerokość wejścia \textit{depth}}. Dodawanie odbywa się z~nasyceniem w~zakresie reprezentacji. Warto dodać, że blok opóźniający posiada (opcjonalną) funkcję miękkiego startu, która ogranicza wartość realizowanego opóźnienia do ilości próbek zapisanych w~pamięci BRAM od ostatneigo resetu. Ma ona na celu zredukowanie potencjalnych zniekształceń sygnału na początku działania efektów wynikajacych z~wykorzystania niezainicjalizowanych komórek pamięci jako właściwych danych.
+
+Do realizacji bloku opóźniającego w~przypadku efektu \textit{delay} wykorzystano 21 bloków RAM, których łączna pojemność umożliwi przechowanie do $45056$ 16-bitowych próbek danych. Dla częstotliwości próbkowania na poziomie 44100Hz oznacza to możliwość osiągnięcia opóźnień rzędu jednej sekundy. Ze względu na zastosowanie bufora na wyjściu bloku BRAM opóźnienie efektu wynosi \textbf{4~cykle}. Analogicznie do przypadku poprzednich efektów celem weryfikacji poprawności działania modułu skonstruowany został projekt symulacji umożliwiający realizację różnych scenariuszy testowych. Rys. \ref{sim-delay} przedstawia fragment symulacji, w~którym wartość opóźnienia została ustalona na poziomie 255 próbek, natomiast jego siła miała wartość maksymalną ($0.5$). Sygnał wejściowy to ponownie fala sinusoidalna o~częstotliwości $440$Hz próbkowana z~częstotliwośicą $44100$Hz. Jak widać włączenie efektu nie powoduje natychmiastowej zmiany charakteru sygnału. Zmiana ta następuje po czasie około $5.8$ ms. Zgadza się to z~przewidywaniami teoretycznymi ($1s / 44100 \times 255 \approx 5.8 ms$). Ponadto symulacja ukazuje zmniejszenie amplitudy sygnału po dodaniu do niego składnika opóźnionego. To również zgadza się z~przewidywaniami. Opóźnienie $255$ próbek odpowiada niecałym $2.5$ okresom sygnału wejściowego. Oznacza to, że znaki próbki wejściowej i~opóźnionej są względem siebie odwrócone, co powoduje efektywne zredukowanie amplitudy fali wyjściowej.
+
+\vspace{0.5cm}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{img/sim/delay_sim_high_gain.png}
+    \captionsetup{format=plain,justification=centering}
+    \caption{Fragment symulacji działania efektu \textit{delay}}
+    \label{sim-delay}
+\end{figure}
+\vspace{0.5cm}
