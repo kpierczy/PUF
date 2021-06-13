@@ -11,6 +11,7 @@
 -- @ Note: Intergation simulation of the whole project is not convinient, as XADC is configured in the `external mux` mode. It 
 --     results in need of generation of a strange analog-stimulus file where a single channel is used to set value of all 9 parameters
 --     of the effect's chain.
+-- @ Important: Remember to regenrate output of IP sources before running simulation!
 -- ===================================================================================================================================
 
 library ieee;

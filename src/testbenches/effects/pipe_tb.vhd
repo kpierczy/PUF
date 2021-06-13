@@ -6,6 +6,7 @@
 --    
 --    Effects pipe's testbench 
 --    
+-- @ Important: Remember to regenrate output of IP sources before running simulation!
 -- ===================================================================================================================================
 
 library ieee;

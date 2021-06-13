@@ -19,7 +19,7 @@ package transreceiver_config is
     constant CONFIG_TRANSRECEIVER_BYTE_SIZE : Positive := 8;
 
     -- Tranmission's baudrate
-    constant CONFIG_TRANSRECEIVER_BAUD_RATE : Positive := 1_000_000;
+    constant CONFIG_TRANSRECEIVER_BAUD_RATE : Positive := 20_000_000;
 
     -- Usage of the parity bit
     constant CONFIG_TRANSRECEIVER_PARITY_USED : Std_logic := '1';

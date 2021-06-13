@@ -16,6 +16,10 @@
 \usepackage[bf]{caption}
 \usepackage{subcaption}
 \usepackage{hyperref}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage[table,xcdraw]{xcolor}
 % Text-formatting
 \usepackage[autostyle]{csquotes}
 \usepackage{caption}
@@ -23,10 +27,9 @@
 \usepackage{amsmath}
 % Miscellaneous
 \usepackage[backend=biber,style=ieee]{biblatex}
-\usepackage[enable]{easy-todo}
+% \usepackage[enable]{easy-todo}
 \usepackage{lipsum}
 \usepackage{setspace}
-
 
 % ================================================================================================================================== %
 % --------------------------------------------------------- Configuration ---------------------------------------------------------- %
@@ -103,19 +106,7 @@
 \input{tex/theoretical-analysis/tests.tex}
 \input{tex/theoretical-analysis/platform.tex}
 
-% Chapter II - Implementation
 \part{Implementacja}
-% 9. Efekt `flanger'
-%     - schemat blokowy z opisem parameterów
-%     - automat skończony
-%     - konfigruacja bloków BRAM
-%     - symulacje
-% 10. Potok
-%     - konfiguracja
-%     - symulacje
-% 11. Integracja
-%     - symulacje
-% 12. Podsumowanie
 \input{tex/implementation/structure.tex}
 \input{tex/implementation/communication.tex}
 \input{tex/implementation/analog.tex}
@@ -126,6 +117,9 @@
 \input{tex/implementation/pipe.tex}
 \input{tex/implementation/system.tex}
 \input{tex/implementation/summary.tex}
+
+\part{Dodatek - opisy wyprowadzeń modułów}
+\input{tex/appendix/pins_descriptions.tex}
 
 % Bibliography
 \clearpage

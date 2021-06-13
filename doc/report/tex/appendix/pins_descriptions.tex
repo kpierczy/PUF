@@ -1,0 +1,132 @@
+
+% ================================================================================================================================== %
+% -------------------------------------------------------- Serial interface -------------------------------------------------------- %
+% ================================================================================================================================== %
+
+\begin{table}[h]
+\small
+\centering
+\begin{tabular}{|c|l|c|c|c|m{4.5cm}|}
+\hline
+\rowcolor[HTML]{C0C0C0}
+\textbf{Np.} & \textbf{Nazwa} & \textbf{Typ} & \textbf{Stan aktywny} & \textbf{Rozmiar} & \textbf{Opis}                                                                                                                                      \\ \hline
+\rowcolor[HTML]{F8A102}\multicolumn{6}{|l|}{Układ odbierający UART} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                & Sygnał taktujący                                                                                                                                   \\ \hline
+2            & reset          & in           & niski                 & 1                & Sygnał resetujący                                                                                                                                  \\ \hline
+3            & rate           & in           & N/D                   & P                & Okres pojedynczego bitu odbieranego wyrażany jako ilość taktów zegara systemowego (clk) minus~1; gdy ustawiony na 0, układ przestaje odbierać dane \\ \hline
+4            & rx             & in           & P                     & 1                & Szeregowe wejście danych                                                                                                                           \\ \hline
+5            & busy           & out          & wysoki                & 1                & Sygnał wskazujący, że układ znajduje się w~stanie odbierania                                                                                       \\ \hline
+6            & error          & out          & wysoki                & 3                & Flagi błędów odbioru (bitów start/stopu) oraz błędu parzystości                                                                                    \\ \hline
+7            & data           & out          & N/D                   & P ($5-8$)        & Równoległe wyjście odebranych danych                                                                                                               \\ \hline
+\multicolumn{6}{|l|}{\cellcolor[HTML]{F8A102}Układ nadający UART} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                & Sygnał taktujący                                                                                                                                   \\ \hline
+2            & reset          & in           & niski                 & 1                & Sygnał resetujący                                                                                                                                  \\ \hline
+3            & rate           & in           & N/D                   & P                & Okres pojedynczego bitu odbieranego wyrażany jako ilość taktów zegara systemowego (clk) minus~1                                                    \\ \hline
+5            & transfer       & in           & wysoki                & 1                & Sygnał aktywujący transfer danych z~linii \textit{data}                                                                                            \\ \hline
+7            & data           & in           & N/D                   & P (5-8)          & Równoległe wejście danych                                                                                                                          \\ \hline
+6            & busy           & out          & wysoki                & 1                & Sygnał wskazujący, że układ znajduje się w~stanie nadawanie                                                                                        \\ \hline
+8            & tx             & out          & P                     & 1                & Szeregowe wyjście danych                                                                                                                           \\ \hline 
+\multicolumn{6}{|l|}{\cellcolor[HTML]{F8A102}Układ odbierający próbki} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                & Sygnał taktujący                                                                                                                                   \\ \hline
+2            & reset          & in           & niski                 & 1                & Sygnał resetujący                                                                                                                                  \\ \hline
+4            & rx             & in           & P                     & 1                & Szeregowe wejście danych                                                                                                                           \\ \hline
+5            & busy           & out          & wysoki                & 1                & Sygnał wskazujący, że układ znajduje się w~stanie odbierania                                                                                       \\ \hline
+6            & err            & out          & wysoki                & 3                & Flagi błędów odbioru (bitów start/stopu) oraz błędu parzystości                                                                                    \\ \hline
+7            & sample         & out          & N/D                   & P ($8n$)         & Równoległe wyjście odebranych danych                                                                                                               \\ \hline
+\end{tabular}
+\caption{Wyprowadzenia modułów}
+\end{table}
+
+% Continued
+\setcounter{table}{0}
+\begin{table}[t]
+\small
+\centering
+\begin{tabular}{|c|l|c|c|c|m{4.5cm}|}
+\hline
+\rowcolor[HTML]{C0C0C0}
+\textbf{Np.} & \textbf{Nazwa} & \textbf{Typ} & \textbf{Stan aktywny} & \textbf{Rozmiar} & \textbf{Opis}                                                      \\ \hline
+\multicolumn{6}{|l|}{\cellcolor[HTML]{F8A102}Układ nadający próbki} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                & Sygnał taktujący                                                   \\ \hline
+2            & reset          & in           & niski                 & 1                & Sygnał resetujący                                                  \\ \hline
+3            & transfer       & in           & wysoki                & 1                & Sygnał aktywujący transfer danych z~linii \textit{data}            \\ \hline
+4            & sample         & in           & N/D                   & P ($8n$)         & Równoległe wejście danych                                          \\ \hline
+5            & busy           & out          & wysoki                & 1                & Sygnał wskazujący, że układ znajduje się w~stanie nadawanie        \\ \hline
+6            & tx             & out          & P                     & 1                & Szeregowe wyjście danych                                           \\ \hline
+\rowcolor[HTML]{32CB00}\multicolumn{6}{|l|}{Moduł analogowy} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                 & Sygnał taktujący                                                  \\ \hline
+2            & reset          & in           & niski                 & 1                 & Sygnał resetujący                                                 \\ \hline
+3            & analog+        & in           & N/D                   & 1                 & Dodatni terminal wejścia analogowego                              \\ \hline
+4            & analog-        & in           & N/D                   & 1                 & Ujemny terminal wejścia analogowego                               \\ \hline
+5            & mux\_select    & out          & N/D                   & 4                 & Sygnał \textit{select} dla zewnętrznego multipleksera analogowego \\ \hline
+\rowcolor[HTML]{34CDF9}\multicolumn{6}{|l|}{Efekt \textit{overdiver}} \\ \hline
+1            & clk            & in           & zbocze narastające    & 1                 & Sygnał taktujący                                                  \\ \hline
+2            & reset\_n       & in           & niski                 & 1                 & Sygnał resetujący                                                 \\ \hline
+3            & enable\_in     & in           & wysoki                & 1                 & Aktywacja efektu                                                  \\ \hline
+4            & valid\_in      & in           & wysoki                & 1                 & Sygnał aktywujący przetworzenie danych wejściowych                \\ \hline
+5            & sample\_in     & in           & N/D                   & P ($8n$)          & Wejście danych                                                    \\ \hline
+6            & valid\_out     & out          & wysoki                & 1                 & Sygnał oznaczający wystawienie przetworzonych danych na wyjście   \\ \hline
+7            & sample\_out    & out          & N/D                   & P ($8n$)          & Wyjście danych                                                    \\ \hline
+8            & gain           & in           & N/D                   & P                 & Wzmocnienie sygnału wejściowego                                   \\ \hline
+9            & saturation     & in           & N/D                   & P ($8n-1$)        & Poziom nasycenia sygnału wyjściowego                              \\ \hline
+\end{tabular}
+\caption{Wyprowadzenia modułów (kontunuacja)}
+\end{table}
+
+% Continued
+\setcounter{table}{0}
+\begin{table}[t]
+\small
+\centering
+\begin{tabular}{|c|l|c|c|c|m{4.5cm}|}
+\hline
+\rowcolor[HTML]{C0C0C0}
+\textbf{Np.} & \textbf{Nazwa} & \textbf{Typ} & \textbf{Stan aktywny} & \textbf{Rozmiar} & \textbf{Opis} \\ \hline
+\rowcolor[HTML]{34CDF9}\multicolumn{6}{|l|}{Efekt tremolo} \\ \hline
+1            & clk       & in           & zbocze narastające    & 1                 & Sygnał taktujący                                                                                                           \\ \hline
+2            & reset     & in           & niski                 & 1                 & Sygnał resetujący                                                                                                          \\ \hline
+3            & enable    & in           & wysoki                & 1                 & Aktywacja efektu                                                                                                           \\ \hline
+4            & valid in  & in           & wysoki                & 1                 & Sygnał aktywujący przetworzenie danych wejściowych                                                                         \\ \hline
+5            & in data   & in           & N/D                   & P ($8n$)          & Wejście danych                                                                                                             \\ \hline
+6            & valid out & out          & wysoki                & 1                 & Sygnał oznaczający wystawienie przetworzonych danych na wyjście                                                            \\ \hline
+7            & out data  & out          & N/D                   & P ($8n$)          & Wyjście danych                                                                                                             \\ \hline
+8            & depth     & in           & N/D                   & P                 & Głębokość efektu rozumiana jako parametr $d$ równania $y[t] = 1 - d \times x[t]$ wyznaczającego poziom modulacji           \\ \hline
+9            & period    & in           & N/D                   & P ($8n-1$)        & Ilość taktów zegara systemowego przypadających na jedną próbkę sygnału modulującego                                        \\ \hline
+\rowcolor[HTML]{34CDF9}\multicolumn{6}{|l|}{Efekt \textit{delay}} \\ \hline
+1            & clk       & in           & zbocze narastające    & 1                 & Sygnał taktujący                                                                                                           \\ \hline
+2            & reset     & in           & niski                 & 1                 & Sygnał resetujący                                                                                                          \\ \hline
+3            & enable    & in           & wysoki                & 1                 & Aktywacja efektu                                                                                                           \\ \hline
+4            & valid in  & in           & wysoki                & 1                 & Sygnał aktywujący przetworzenie danych wejściowych                                                                         \\ \hline
+5            & in data   & in           & N/D                   & P ($8n$)          & Wejście danych                                                                                                             \\ \hline
+6            & valid out & out          & wysoki                & 1                 & Sygnał oznaczający wystawienie przetworzonych danych na wyjście                                                            \\ \hline
+7            & out data  & out          & N/D                   & P ($8n$)          & Wyjście danych                                                                                                             \\ \hline
+8            & delay     & in           & N/D                   & P                 & Głębokość echa rozumiana jako odległość (wyrażona w~czasie dyskretnym między próbką wejściową a~próbką z~nią sumowaną)     \\ \hline
+8            & depth     & in           & N/D                   & P                 & Wzmocnienie opóźnionej części sygnału wyjściowego                                                                          \\ \hline
+\end{tabular}
+\caption{Wyprowadzenia modułów (kontunuacja)}
+\end{table}
+
+% Continued
+\setcounter{table}{0}
+\begin{table}[t]
+\small
+\centering
+\begin{tabular}{|c|l|c|c|c|m{4.5cm}|}
+\hline
+\rowcolor[HTML]{C0C0C0}
+\textbf{Np.} & \textbf{Nazwa} & \textbf{Typ} & \textbf{Stan aktywny} & \textbf{Rozmiar} & \textbf{Opis} \\ \hline
+\rowcolor[HTML]{34CDF9}\multicolumn{6}{|l|}{Efekt \textit{flanger}} \\ \hline
+1            & clk       & in           & zbocze narastające    & 1                 & Sygnał taktujący                                                                                                           \\ \hline
+2            & reset     & in           & niski                 & 1                 & Sygnał resetujący                                                                                                          \\ \hline
+3            & enable    & in           & wysoki                & 1                 & Aktywacja efektu                                                                                                           \\ \hline
+4            & valid in  & in           & wysoki                & 1                 & Sygnał aktywujący przetworzenie danych wejściowych                                                                         \\ \hline
+5            & in data   & in           & N/D                   & P ($8n$)          & Wejście danych                                                                                                             \\ \hline
+6            & valid out & out          & wysoki                & 1                 & Sygnał oznaczający wystawienie przetworzonych danych na wyjście                                                            \\ \hline
+7            & out data  & out          & N/D                   & P ($8n$)          & Wyjście danych                                                                                                             \\ \hline
+8            & depth     & in           & N/D                   & P                 & Głębokość efektu rozumiana jako amlituda opóźnień opóźnionej części sygnału wyjściowego                                    \\ \hline
+8            & strength  & in           & N/D                   & P                 & Udział sygnału opóźnionego w~sygnale wyjściowym                                                                            \\ \hline
+8            & period    & in           & N/D                   & P                 & Okres oscylacji opóźnienia wyrażony w~ilości taktów zegara systemowego przypadajacych na jedną próbkę sygnału oscylującego \\ \hline
+\end{tabular}
+\caption{Wyprowadzenia modułów (kontunuacja)}
+\end{table}
+

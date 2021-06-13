@@ -48,20 +48,20 @@
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSABoardId" Val="cora-z7-10"/>
-    <Option Name="WTXSimLaunchSim" Val="454"/>
+    <Option Name="WTXSimLaunchSim" Val="467"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="70"/>
-    <Option Name="WTModelSimExportSim" Val="70"/>
-    <Option Name="WTQuestaExportSim" Val="70"/>
-    <Option Name="WTIesExportSim" Val="70"/>
-    <Option Name="WTVcsExportSim" Val="70"/>
-    <Option Name="WTRivieraExportSim" Val="70"/>
-    <Option Name="WTActivehdlExportSim" Val="70"/>
+    <Option Name="WTXSimExportSim" Val="77"/>
+    <Option Name="WTModelSimExportSim" Val="77"/>
+    <Option Name="WTQuestaExportSim" Val="77"/>
+    <Option Name="WTIesExportSim" Val="77"/>
+    <Option Name="WTVcsExportSim" Val="77"/>
+    <Option Name="WTRivieraExportSim" Val="77"/>
+    <Option Name="WTActivehdlExportSim" Val="77"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -507,6 +507,7 @@
       </File>
       <File Path="$PPRDIR/../config/sim/UartRxTb_behav.wcfg">
         <FileInfo>
+          <Attr Name="UserDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
@@ -522,9 +523,20 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../src/testbenches/top_parametrizable_tb.vhd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../config/sim/TopParamTb_behav.wcfg">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="UartRxTb"/>
+        <Option Name="TopModule" Val="TopParamTb"/>
         <Option Name="TopLib" Val="xil_defaultlib"/>
         <Option Name="TransportPathDelay" Val="0"/>
         <Option Name="TransportIntDelay" Val="0"/>
@@ -549,6 +561,7 @@
         <Option Name="XSimWcfgFile" Val="$PPRDIR/../config/sim/UartRxTb_behav.wcfg"/>
         <Option Name="XSimWcfgFile" Val="$PPRDIR/../config/sim/SampleTxTb_behav.wcfg"/>
         <Option Name="XSimWcfgFile" Val="$PPRDIR/../config/sim/SampleRxTb_behav.wcfg"/>
+        <Option Name="XSimWcfgFile" Val="$PPRDIR/../config/sim/TopParamTb_behav.wcfg"/>
         <Option Name="xsim.simulate.runtime" Val="1ms"/>
       </Config>
     </FileSet>
@@ -677,9 +690,7 @@
   <Runs Version="1" Minor="15">
     <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7z010clg400-1" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design">
           <Option Id="Assert">1</Option>
         </Step>
@@ -688,74 +699,79 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="FlangerEffectGeneratorBram_synth_1" Type="Ft3:Synth" SrcSet="FlangerEffectGeneratorBram" Part="xc7z010clg400-1" ConstrsSet="FlangerEffectGeneratorBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FlangerEffectGeneratorBram_synth_1">
+    <Run Id="FlangerEffectGeneratorBram_synth_1" Type="Ft3:Synth" SrcSet="FlangerEffectGeneratorBram" Part="xc7z010clg400-1" ConstrsSet="FlangerEffectGeneratorBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/FlangerEffectGeneratorBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FlangerEffectGeneratorBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="QuadrupletGeneratorTbBram_synth_1" Type="Ft3:Synth" SrcSet="QuadrupletGeneratorTbBram" Part="xc7z010clg400-1" ConstrsSet="QuadrupletGeneratorTbBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/QuadrupletGeneratorTbBram_synth_1">
+    <Run Id="QuadrupletGeneratorTbBram_synth_1" Type="Ft3:Synth" SrcSet="QuadrupletGeneratorTbBram" Part="xc7z010clg400-1" ConstrsSet="QuadrupletGeneratorTbBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/QuadrupletGeneratorTbBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/QuadrupletGeneratorTbBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="TremoloEffectBram_synth_1" Type="Ft3:Synth" SrcSet="TremoloEffectBram" Part="xc7z010clg400-1" ConstrsSet="TremoloEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/TremoloEffectBram_synth_1">
+    <Run Id="TremoloEffectBram_synth_1" Type="Ft3:Synth" SrcSet="TremoloEffectBram" Part="xc7z010clg400-1" ConstrsSet="TremoloEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/TremoloEffectBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/TremoloEffectBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="FlangerEffectBram_synth_1" Type="Ft3:Synth" SrcSet="FlangerEffectBram" Part="xc7z010clg400-1" ConstrsSet="FlangerEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FlangerEffectBram_synth_1">
+    <Run Id="FlangerEffectBram_synth_1" Type="Ft3:Synth" SrcSet="FlangerEffectBram" Part="xc7z010clg400-1" ConstrsSet="FlangerEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/FlangerEffectBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/FlangerEffectBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="DelayEffectBram_synth_1" Type="Ft3:Synth" SrcSet="DelayEffectBram" Part="xc7z010clg400-1" ConstrsSet="DelayEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/DelayEffectBram_synth_1">
+    <Run Id="DelayEffectBram_synth_1" Type="Ft3:Synth" SrcSet="DelayEffectBram" Part="xc7z010clg400-1" ConstrsSet="DelayEffectBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/DelayEffectBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/DelayEffectBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="DelayLineTbBram_synth_1" Type="Ft3:Synth" SrcSet="DelayLineTbBram" Part="xc7z010clg400-1" ConstrsSet="DelayLineTbBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/DelayLineTbBram_synth_1">
+    <Run Id="DelayLineTbBram_synth_1" Type="Ft3:Synth" SrcSet="DelayLineTbBram" Part="xc7z010clg400-1" ConstrsSet="DelayLineTbBram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/DelayLineTbBram_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/DelayLineTbBram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="AnalogSequenceReaderXadc_synth_1" Type="Ft3:Synth" SrcSet="AnalogSequenceReaderXadc" Part="xc7z010clg400-1" ConstrsSet="AnalogSequenceReaderXadc" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/AnalogSequenceReaderXadc_synth_1">
+    <Run Id="AnalogSequenceReaderXadc_synth_1" Type="Ft3:Synth" SrcSet="AnalogSequenceReaderXadc" Part="xc7z010clg400-1" ConstrsSet="AnalogSequenceReaderXadc" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/AnalogSequenceReaderXadc_synth_1" IncludeInArchive="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/AnalogSequenceReaderXadc_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2020"/>
         <Step Id="synth_design"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2020"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
     <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-1" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" SynthRun="synth_1" IncludeInArchive="true" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2020">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2020"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
